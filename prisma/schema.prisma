@@ -1,0 +1,468 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum DealStage {
+  NEW_LEAD
+  CONTACTED
+  QUALIFIED
+  PROPOSAL_SENT
+  NEGOTIATION
+  WON
+  LOST
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum TaskStatus {
+  OPEN
+  COMPLETED
+}
+
+enum TaskRecurrencePattern {
+  NONE
+  DAILY
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+  CUSTOM_DAYS
+}
+
+enum ConversationSource {
+  WHATSAPP
+  EMAIL
+  MANUAL
+}
+
+enum WorkspaceRole {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+enum IntegrationProvider {
+  EMAIL_IMAP
+  WHATSAPP_META
+  SPREADSHEET_FILE
+  ACCOUNTING_FILE
+}
+
+enum IntegrationStatus {
+  DISCONNECTED
+  CONNECTED
+  NEEDS_ATTENTION
+}
+
+enum AutomationTriggerType {
+  DEAL_STAGE_CHANGED
+  TASK_COMPLETED
+  CONVERSATION_CAPTURED
+}
+
+enum AutomationActionType {
+  CREATE_TASK
+  ADD_NOTE
+}
+
+enum JobType {
+  SYNC_EMAIL
+  SYNC_SPREADSHEET
+  RUN_AUTOMATION
+  PROCESS_WHATSAPP
+}
+
+enum JobStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  OVERDUE
+  VOID
+}
+
+enum ActivityType {
+  CONTACT_CREATED
+  CONTACT_UPDATED
+  CONTACT_DELETED
+  DEAL_CREATED
+  DEAL_UPDATED
+  DEAL_STAGE_CHANGED
+  DEAL_DELETED
+  TASK_CREATED
+  TASK_UPDATED
+  TASK_COMPLETED
+  TASK_DELETED
+  TASK_RECURRING_SCHEDULED
+  NOTE_ADDED
+  CAPTURE_APPLIED
+  CONVERSATION_CAPTURED
+  TEAM_MEMBER_ADDED
+  INTEGRATION_SYNCED
+  AUTOMATION_TRIGGERED
+  INVOICE_SYNCED
+  USER_ONBOARDED
+}
+
+enum CaptureStatus {
+  PARSED
+  APPLIED
+  DISMISSED
+}
+
+enum ParserMode {
+  AI
+  FALLBACK
+}
+
+model User {
+  id                  String          @id @default(cuid())
+  name                String
+  email               String          @unique
+  passwordHash        String
+  onboardingCompleted Boolean         @default(false)
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  sessions            Session[]
+  companies           Company[]
+  contacts            Contact[]
+  deals               Deal[]
+  tasks               Task[]
+  notes               Note[]
+  activities          Activity[]
+  captures            ParsedCapture[]
+  conversationLogs    ConversationLog[]
+  ownedWorkspace      Workspace?      @relation("WorkspaceOwner")
+  workspaceMemberships WorkspaceMembership[] @relation("WorkspaceMembershipUser")
+  invitedMemberships  WorkspaceMembership[] @relation("WorkspaceInvitedBy")
+  assignedDeals       Deal[]          @relation("AssignedDeals")
+  assignedTasks       Task[]          @relation("AssignedTasks")
+  automationRules     AutomationRule[] @relation("AutomationCreatedBy")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Workspace {
+  id          String                @id @default(cuid())
+  ownerUserId String                @unique
+  name        String
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+  ownerUser   User                  @relation("WorkspaceOwner", fields: [ownerUserId], references: [id], onDelete: Cascade)
+  memberships WorkspaceMembership[]
+  integrations IntegrationConnection[]
+  automationRules AutomationRule[]
+  invoices    Invoice[]
+  jobs        BackgroundJob[]
+
+  @@index([createdAt])
+}
+
+model WorkspaceMembership {
+  id              String        @id @default(cuid())
+  workspaceId     String
+  userId          String
+  invitedByUserId String?
+  role            WorkspaceRole @default(MEMBER)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  workspace       Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user            User          @relation("WorkspaceMembershipUser", fields: [userId], references: [id], onDelete: Cascade)
+  invitedBy       User?         @relation("WorkspaceInvitedBy", fields: [invitedByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([workspaceId, userId])
+  @@index([userId])
+}
+
+model Company {
+  id        String    @id @default(cuid())
+  userId    String
+  name      String
+  website   String?
+  industry  String?
+  notes     String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contacts  Contact[]
+  deals     Deal[]
+
+  @@unique([userId, name])
+  @@index([userId])
+}
+
+model Contact {
+  id         String     @id @default(cuid())
+  userId     String
+  companyId  String?
+  name       String
+  email      String?
+  phone      String?
+  source     String?
+  tags       Json?
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company    Company?   @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  deals      Deal[]
+  tasks      Task[]
+  notes      Note[]
+  activities Activity[] @relation("ContactActivities")
+  conversationLogs ConversationLog[]
+  invoices   Invoice[]
+
+  @@index([userId, name])
+  @@index([userId, email])
+}
+
+model Deal {
+  id                String       @id @default(cuid())
+  userId            String
+  contactId         String?
+  companyId         String?
+  assignedToUserId  String?
+  title             String
+  description       String?
+  stage             DealStage    @default(NEW_LEAD)
+  amount            Int?
+  currency          String       @default("INR")
+  expectedCloseDate DateTime?
+  nextStep          String?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  user              User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contact           Contact?     @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  company           Company?     @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  assignee          User?        @relation("AssignedDeals", fields: [assignedToUserId], references: [id], onDelete: SetNull)
+  tasks             Task[]
+  notes             Note[]
+  activities        Activity[]   @relation("DealActivities")
+  conversationLogs  ConversationLog[]
+  invoices          Invoice[]
+
+  @@index([userId, stage])
+  @@index([contactId])
+  @@index([assignedToUserId])
+}
+
+model Task {
+  id          String       @id @default(cuid())
+  userId      String
+  contactId   String?
+  dealId      String?
+  assignedToUserId String?
+  title       String
+  description String?
+  dueDate     DateTime?
+  priority    TaskPriority @default(MEDIUM)
+  status      TaskStatus   @default(OPEN)
+  recurrencePattern      TaskRecurrencePattern @default(NONE)
+  recurrenceIntervalDays Int?
+  recurrenceSeriesId     String?
+  completedAt DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contact     Contact?     @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  deal        Deal?        @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  assignee    User?        @relation("AssignedTasks", fields: [assignedToUserId], references: [id], onDelete: SetNull)
+  activities  Activity[]   @relation("TaskActivities")
+
+  @@index([userId, status, dueDate])
+  @@index([userId, recurrenceSeriesId])
+  @@index([assignedToUserId])
+}
+
+model Note {
+  id         String      @id @default(cuid())
+  userId     String
+  contactId  String?
+  dealId     String?
+  content    String
+  source     String      @default("manual")
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contact    Contact?    @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  deal       Deal?       @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  activities Activity[]  @relation("NoteActivities")
+
+  @@index([userId, createdAt])
+}
+
+model Activity {
+  id          String       @id @default(cuid())
+  userId      String
+  type        ActivityType
+  title       String
+  description String?
+  entityType  String
+  entityId    String
+  metadata    Json?
+  contactId   String?
+  dealId      String?
+  taskId      String?
+  noteId      String?
+  createdAt   DateTime     @default(now())
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contact     Contact?     @relation("ContactActivities", fields: [contactId], references: [id], onDelete: SetNull)
+  deal        Deal?        @relation("DealActivities", fields: [dealId], references: [id], onDelete: SetNull)
+  task        Task?        @relation("TaskActivities", fields: [taskId], references: [id], onDelete: SetNull)
+  note        Note?        @relation("NoteActivities", fields: [noteId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([contactId, createdAt])
+  @@index([dealId, createdAt])
+}
+
+model ParsedCapture {
+  id            String        @id @default(cuid())
+  userId        String
+  inputText     String
+  status        CaptureStatus @default(PARSED)
+  parserMode    ParserMode
+  confidence    Float?
+  parsedPayload Json
+  appliedAt     DateTime?
+  createdAt     DateTime      @default(now())
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversationLogs ConversationLog[]
+
+  @@index([userId, createdAt])
+}
+
+model IntegrationConnection {
+  id              String            @id @default(cuid())
+  workspaceId     String
+  provider        IntegrationProvider
+  name            String
+  status          IntegrationStatus @default(DISCONNECTED)
+  config          Json
+  syncState       Json?
+  lastSyncedAt    DateTime?
+  lastSyncMessage String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  workspace       Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  conversationLogs ConversationLog[]
+  jobs            BackgroundJob[]
+
+  @@unique([workspaceId, provider, name])
+  @@index([workspaceId, provider])
+}
+
+model AutomationRule {
+  id              String                @id @default(cuid())
+  workspaceId     String
+  createdByUserId String?
+  name            String
+  isActive        Boolean               @default(true)
+  triggerType     AutomationTriggerType
+  triggerConfig   Json?
+  actionType      AutomationActionType
+  actionConfig    Json
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  workspace       Workspace             @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdByUser   User?                 @relation("AutomationCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId, isActive])
+}
+
+model Invoice {
+  id                String        @id @default(cuid())
+  workspaceId       String
+  contactId         String?
+  dealId            String?
+  number            String
+  clientName        String
+  amount            Int
+  currency          String        @default("INR")
+  status            InvoiceStatus @default(DRAFT)
+  issueDate         DateTime      @default(now())
+  dueDate           DateTime?
+  source            String        @default("manual")
+  externalReference String?
+  notes             String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  workspace         Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  contact           Contact?      @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  deal              Deal?         @relation(fields: [dealId], references: [id], onDelete: SetNull)
+
+  @@unique([workspaceId, number])
+  @@index([workspaceId, status])
+}
+
+model BackgroundJob {
+  id                    String     @id @default(cuid())
+  workspaceId           String
+  integrationConnectionId String?
+  type                  JobType
+  status                JobStatus  @default(QUEUED)
+  payload               Json
+  attempts              Int        @default(0)
+  scheduledFor          DateTime   @default(now())
+  startedAt             DateTime?
+  finishedAt            DateTime?
+  lastError             String?
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
+  workspace             Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  integrationConnection IntegrationConnection? @relation(fields: [integrationConnectionId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId, status, scheduledFor])
+}
+
+model ConversationLog {
+  id               String             @id @default(cuid())
+  userId           String
+  contactId        String?
+  dealId           String?
+  parsedCaptureId  String?
+  integrationConnectionId String?
+  externalMessageId String?
+  source           ConversationSource
+  subject          String?
+  participantLabel String?
+  summary          String
+  rawText          String
+  actionItems      Json?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contact          Contact?           @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  deal             Deal?              @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  parsedCapture    ParsedCapture?     @relation(fields: [parsedCaptureId], references: [id], onDelete: SetNull)
+  integrationConnection IntegrationConnection? @relation(fields: [integrationConnectionId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([contactId, createdAt])
+  @@index([dealId, createdAt])
+  @@index([integrationConnectionId, createdAt])
+  @@unique([integrationConnectionId, externalMessageId])
+}

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import type { Route } from "next";
-import { Sparkles, LayoutDashboard, Users, KanbanSquare, CheckSquare, Search, Settings, BellRing, Upload, MessageSquareMore, PlugZap, ReceiptText, Bot } from "lucide-react";
+import { Sparkles, LayoutDashboard, Users, KanbanSquare, CheckSquare, Search, Settings, BellRing, Upload, MessageSquareMore, PlugZap, ReceiptText, Bot, BookOpen } from "lucide-react";
 
 type NavSection = {
   label: string;
@@ -36,6 +36,7 @@ const navSections: NavSection[] = [
       { href: "/integrations" as Route, label: "Integrations", icon: PlugZap },
       { href: "/finance" as Route, label: "Finance", icon: ReceiptText },
       { href: "/capture" as Route, label: "AI Capture", icon: Sparkles },
+      { href: "/guide" as Route, label: "Guide", icon: BookOpen },
       { href: "/imports" as Route, label: "Imports", icon: Upload },
       { href: "/search" as Route, label: "Search", icon: Search },
       { href: "/settings" as Route, label: "Settings", icon: Settings },

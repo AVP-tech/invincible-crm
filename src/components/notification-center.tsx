@@ -94,20 +94,20 @@ export function NotificationCenter() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-30"
+              className="fixed inset-0 z-40"
               onClick={() => setOpen(false)}
             />
             <motion.div
-              initial={{ opacity: 0, y: -8, scale: 0.97 }}
+              initial={{ opacity: 0, y: -10, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -8, scale: 0.97 }}
-              transition={{ type: "spring", stiffness: 400, damping: 28 }}
-              className="absolute right-0 top-12 z-40 w-[360px] overflow-hidden rounded-3xl border border-black/8 bg-white/95 shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-[#151a24]/97"
+              exit={{ opacity: 0, y: -10, scale: 0.95 }}
+              transition={{ type: "spring", stiffness: 400, damping: 30 }}
+              className="absolute right-0 top-12 z-50 w-[360px] overflow-hidden rounded-3xl border border-black/5 bg-white/95 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] backdrop-blur-2xl dark:border-white/10 dark:bg-slate-900/95 dark:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)]"
             >
               {/* Header */}
               <div className="flex items-center justify-between border-b border-black/5 px-5 py-4 dark:border-white/5">
                 <div>
-                  <p className="text-sm font-semibold text-ink">Notifications</p>
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white">Notifications</p>
                   {unread > 0 && (
                     <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
                       {unread} unread
@@ -119,7 +119,7 @@ export function NotificationCenter() {
                     <button
                       type="button"
                       onClick={markAllRead}
-                      className="text-xs font-medium text-moss transition hover:text-moss/70"
+                      className="text-xs font-medium text-moss hover:text-moss/80 transition-colors"
                     >
                       Mark all read
                     </button>
@@ -135,58 +135,74 @@ export function NotificationCenter() {
               </div>
 
               {/* List */}
-              <div className="max-h-[420px] overflow-y-auto">
+              <div className="max-h-[420px] overflow-y-auto overflow-x-hidden">
                 {notifications.length === 0 ? (
-                  <div className="py-12 text-center text-sm text-slate-500 dark:text-slate-400">
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                    className="py-12 text-center text-sm text-slate-500 dark:text-slate-400"
+                  >
                     All caught up 🎉
-                  </div>
+                  </motion.div>
                 ) : (
-                  <ul className="p-2 space-y-0.5">
-                    {notifications.map((notif) => {
-                      const Icon = notif.icon;
-                      return (
-                        <motion.li
-                          key={notif.id}
-                          layout
-                          initial={{ opacity: 1 }}
-                          exit={{ opacity: 0, x: 20 }}
-                          transition={{ duration: 0.2 }}
-                          className={`group relative flex gap-3 rounded-2xl p-3 transition ${
-                            !notif.read
-                              ? "bg-moss/5 dark:bg-moss/10"
-                              : "hover:bg-slate-50 dark:hover:bg-white/5"
-                          }`}
-                        >
-                          <div className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${notif.iconColor}`}>
-                            <Icon className="h-4 w-4" />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-start justify-between gap-2">
-                              <p className={`text-sm font-medium ${notif.read ? "text-slate-700 dark:text-slate-300" : "text-ink"}`}>
-                                {notif.title}
-                              </p>
-                              {!notif.read && (
-                                <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-moss" />
-                              )}
-                            </div>
-                            <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                              {notif.description}
-                            </p>
-                            <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
-                              {notif.time}
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => dismiss(notif.id)}
-                            className="absolute right-3 top-3 hidden rounded-lg p-0.5 text-slate-300 hover:text-slate-500 group-hover:block dark:text-slate-600 dark:hover:text-slate-300"
+                  <motion.ul 
+                    initial="hidden"
+                    animate="visible"
+                    variants={{
+                      hidden: { opacity: 0 },
+                      visible: { opacity: 1, transition: { staggerChildren: 0.05 } }
+                    }}
+                    className="p-2 space-y-0.5"
+                  >
+                    <AnimatePresence>
+                      {notifications.map((notif) => {
+                        const Icon = notif.icon;
+                        return (
+                          <motion.li
+                            key={notif.id}
+                            layout
+                            variants={{
+                              hidden: { opacity: 0, x: 20 },
+                              visible: { opacity: 1, x: 0 },
+                            }}
+                            exit={{ opacity: 0, scale: 0.95, x: -20 }}
+                            transition={{ duration: 0.2 }}
+                            className={`group relative flex gap-3 rounded-2xl p-3 transition-colors ${
+                              !notif.read
+                                ? "bg-moss/5 dark:bg-moss/10"
+                                : "hover:bg-slate-50 dark:hover:bg-white/5"
+                            }`}
                           >
-                            <X className="h-3 w-3" />
-                          </button>
-                        </motion.li>
-                      );
-                    })}
-                  </ul>
+                            <div className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${notif.iconColor}`}>
+                              <Icon className="h-4 w-4" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-start justify-between gap-2">
+                                <p className={`text-sm font-medium ${notif.read ? "text-slate-600 dark:text-slate-300" : "text-slate-900 dark:text-white"}`}>
+                                  {notif.title}
+                                </p>
+                                {!notif.read && (
+                                  <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-moss" />
+                                )}
+                              </div>
+                              <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                                {notif.description}
+                              </p>
+                              <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
+                                {notif.time}
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => dismiss(notif.id)}
+                              className="absolute right-3 top-3 hidden rounded-lg p-1 text-slate-400 hover:bg-slate-200/50 hover:text-slate-600 group-hover:block dark:text-slate-500 dark:hover:bg-white/10 dark:hover:text-slate-300 transition-colors"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </motion.li>
+                        );
+                      })}
+                    </AnimatePresence>
+                  </motion.ul>
                 )}
               </div>
             </motion.div>

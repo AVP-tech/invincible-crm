@@ -16,7 +16,13 @@ export async function POST(request: Request) {
     }
 
     const { name, ...json } = (await readJson(request)) as Record<string, any>;
-    const parsed = emailIntegrationInputSchema.safeParse({ name: name || "Primary Inbox", ...json });
+    const parsed = emailIntegrationInputSchema
+      .partial({ password: true })
+      .safeParse({
+        name: name || "Primary Inbox",
+        ...json,
+        password: typeof json.password === "string" && json.password.trim() ? json.password : undefined,
+      });
 
     if (!parsed.success) {
       return jsonError("Invalid email configuration parameters.", 400);
@@ -25,6 +31,6 @@ export async function POST(request: Request) {
     const connection = await upsertEmailIntegration(user.workspaceId, parsed.data);
     return NextResponse.json({ ok: true, connection });
   } catch (error) {
-    return jsonError("Failed to save email integration settings", 500);
+    return jsonError(error instanceof Error ? error.message : "Failed to save email integration settings", 500);
   }
 }

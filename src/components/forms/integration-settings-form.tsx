@@ -9,14 +9,15 @@ import { Textarea } from "@/components/ui/textarea";
 
 type IntegrationSettingsFormProps = {
   canManage: boolean;
+  webhookUrl: string;
   emailDefaults?: {
     name?: string;
     host?: string;
     port?: number;
     secure?: boolean;
     username?: string;
-    password?: string;
     mailbox?: string;
+    hasPassword?: boolean;
     status?: string;
     lastSyncMessage?: string | null;
   };
@@ -24,30 +25,30 @@ type IntegrationSettingsFormProps = {
     name?: string;
     phoneNumberId?: string;
     verifyToken?: string;
-    accessToken?: string;
+    hasAccessToken?: boolean;
     status?: string;
     lastSyncMessage?: string | null;
   };
 };
 
-export function IntegrationSettingsForm({ canManage, emailDefaults, whatsappDefaults }: IntegrationSettingsFormProps) {
+export function IntegrationSettingsForm({ canManage, webhookUrl, emailDefaults, whatsappDefaults }: IntegrationSettingsFormProps) {
   const router = useRouter();
   const [emailName, setEmailName] = useState(emailDefaults?.name ?? "Primary inbox");
   const [host, setHost] = useState(emailDefaults?.host ?? "");
   const [port, setPort] = useState(String(emailDefaults?.port ?? 993));
   const [secure, setSecure] = useState(emailDefaults?.secure ?? true);
   const [username, setUsername] = useState(emailDefaults?.username ?? "");
-  const [password, setPassword] = useState(emailDefaults?.password ?? "");
+  const [password, setPassword] = useState("");
   const [mailbox, setMailbox] = useState(emailDefaults?.mailbox ?? "INBOX");
   const [whatsappName, setWhatsappName] = useState(whatsappDefaults?.name ?? "Primary WhatsApp");
   const [phoneNumberId, setPhoneNumberId] = useState(whatsappDefaults?.phoneNumberId ?? "");
   const [verifyToken, setVerifyToken] = useState(whatsappDefaults?.verifyToken ?? "");
-  const [accessToken, setAccessToken] = useState(whatsappDefaults?.accessToken ?? "");
+  const [accessToken, setAccessToken] = useState("");
   const [isSavingEmail, setIsSavingEmail] = useState(false);
   const [isSavingWhatsapp, setIsSavingWhatsapp] = useState(false);
   const [isSyncingEmail, setIsSyncingEmail] = useState(false);
   const [isProcessingJobs, setIsProcessingJobs] = useState(false);
-  const webhookPath = useMemo(() => "/api/webhooks/whatsapp", []);
+  const webhookPath = useMemo(() => webhookUrl, [webhookUrl]);
 
   async function saveEmail(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -76,6 +77,7 @@ export function IntegrationSettingsForm({ canManage, emailDefaults, whatsappDefa
     }
 
     toast.success("Email integration saved");
+    setPassword("");
     router.refresh();
   }
 
@@ -120,6 +122,7 @@ export function IntegrationSettingsForm({ canManage, emailDefaults, whatsappDefa
     }
 
     toast.success("WhatsApp integration saved");
+    setAccessToken("");
     router.refresh();
   }
 
@@ -164,7 +167,16 @@ export function IntegrationSettingsForm({ canManage, emailDefaults, whatsappDefa
             <Input value={username} onChange={(event) => setUsername(event.target.value)} disabled={!canManage} />
           </Field>
           <Field label="Password / app password">
-            <Input type="password" value={password} onChange={(event) => setPassword(event.target.value)} disabled={!canManage} />
+            <Input
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              disabled={!canManage}
+              placeholder={emailDefaults?.hasPassword ? "Leave blank to keep the saved app password" : "Enter your IMAP or app password"}
+            />
+            <p className="text-xs text-slate-500">
+              {emailDefaults?.hasPassword ? "A password is already saved. Only fill this if you want to replace it." : "Use an app password when your provider requires one."}
+            </p>
           </Field>
         </div>
         <label className="flex items-center gap-3 text-sm text-slate-700">
@@ -179,6 +191,7 @@ export function IntegrationSettingsForm({ canManage, emailDefaults, whatsappDefa
             {isSyncingEmail ? "Syncing..." : "Run email sync"}
           </Button>
         </div>
+        <p className="text-xs text-slate-500">Saving now verifies the mailbox before it is marked connected.</p>
         {emailDefaults?.status ? <p className="text-sm text-slate-500">Status: {emailDefaults.status}</p> : null}
         {emailDefaults?.lastSyncMessage ? <p className="text-sm text-slate-500">{emailDefaults.lastSyncMessage}</p> : null}
       </form>
@@ -199,10 +212,19 @@ export function IntegrationSettingsForm({ canManage, emailDefaults, whatsappDefa
             <Input value={verifyToken} onChange={(event) => setVerifyToken(event.target.value)} disabled={!canManage} />
           </Field>
           <Field label="Access token">
-            <Input type="password" value={accessToken} onChange={(event) => setAccessToken(event.target.value)} disabled={!canManage} />
+            <Input
+              type="password"
+              value={accessToken}
+              onChange={(event) => setAccessToken(event.target.value)}
+              disabled={!canManage}
+              placeholder={whatsappDefaults?.hasAccessToken ? "Leave blank to keep the saved access token" : "Optional but recommended for Meta validation"}
+            />
+            <p className="text-xs text-slate-500">
+              {whatsappDefaults?.hasAccessToken ? "An access token is already saved. Enter a new one only if you want to rotate it." : "If you add a token, we can verify the phone number ID with Meta while saving."}
+            </p>
           </Field>
         </div>
-        <Field label="Webhook path">
+        <Field label="Webhook URL">
           <Textarea value={webhookPath} readOnly className="min-h-[96px]" />
         </Field>
         <div className="flex flex-wrap gap-3">
@@ -213,6 +235,7 @@ export function IntegrationSettingsForm({ canManage, emailDefaults, whatsappDefa
             {isProcessingJobs ? "Processing..." : "Process queued jobs"}
           </Button>
         </div>
+        <p className="text-xs text-slate-500">Paste this exact URL into your Meta app webhook settings, then subscribe the WhatsApp message events.</p>
         {whatsappDefaults?.status ? <p className="text-sm text-slate-500">Status: {whatsappDefaults.status}</p> : null}
         {whatsappDefaults?.lastSyncMessage ? <p className="text-sm text-slate-500">{whatsappDefaults.lastSyncMessage}</p> : null}
       </form>

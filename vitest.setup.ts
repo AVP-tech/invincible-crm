@@ -7,6 +7,10 @@ const databasePath = path.resolve(process.cwd(), "prisma", "test.db");
 const migrationsRoot = path.resolve(process.cwd(), "prisma", "migrations");
 
 beforeAll(() => {
+  if (!fs.existsSync(migrationsRoot)) {
+    return;
+  }
+
   if (fs.existsSync(databasePath)) {
     fs.rmSync(databasePath);
   }

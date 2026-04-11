@@ -25,6 +25,6 @@ export async function POST(request: Request) {
     const connection = await upsertWhatsappIntegration(user.workspaceId, parsed.data);
     return NextResponse.json({ ok: true, connection });
   } catch (error) {
-    return jsonError("Failed to save WhatsApp integration settings", 500);
+    return jsonError(error instanceof Error ? error.message : "Failed to save WhatsApp integration settings", 500);
   }
 }

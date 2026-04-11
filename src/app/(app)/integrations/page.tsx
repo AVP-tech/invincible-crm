@@ -1,13 +1,40 @@
+import { headers } from "next/headers";
 import { IntegrationProvider } from "@prisma/client";
 import { requireUser, canManageWorkspace } from "@/lib/auth";
-import { listIntegrationConnections } from "@/features/integrations/service";
+import {
+  listIntegrationConnections,
+  sanitizeEmailConnectionConfig,
+  sanitizeWhatsappConnectionConfig,
+} from "@/features/integrations/service";
 import { listBackgroundJobs } from "@/features/jobs/service";
 import { IntegrationSettingsForm } from "@/components/forms/integration-settings-form";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 
+function resolveAppUrl(headerStore: Awaited<ReturnType<typeof headers>>) {
+  const forwardedHost = headerStore.get("x-forwarded-host");
+  const host = forwardedHost ?? headerStore.get("host");
+  const protocol = headerStore.get("x-forwarded-proto") ?? (host?.includes("localhost") ? "http" : "https");
+
+  if (host) {
+    return `${protocol}://${host}`;
+  }
+
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    return process.env.NEXT_PUBLIC_APP_URL;
+  }
+
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+
+  return "";
+}
+
 export default async function IntegrationsPage() {
   const user = await requireUser();
+  const headerStore = await headers();
+  const appUrl = resolveAppUrl(headerStore);
   const connections = await listIntegrationConnections(user.workspaceId);
   const jobs = await listBackgroundJobs(user.workspaceId);
   const canManage = canManageWorkspace(user);
@@ -24,21 +51,24 @@ export default async function IntegrationsPage() {
 
       <IntegrationSettingsForm
         canManage={canManage}
+        webhookUrl={appUrl ? `${appUrl}/api/webhooks/whatsapp` : "/api/webhooks/whatsapp"}
         emailDefaults={
           email
             ? {
-                ...(email.config as Record<string, string | number | boolean>),
+                name: email.name,
+                ...sanitizeEmailConnectionConfig(email.config),
                 status: email.status,
-                lastSyncMessage: email.lastSyncMessage
+                lastSyncMessage: email.lastSyncMessage,
               }
             : undefined
         }
         whatsappDefaults={
           whatsapp
             ? {
-                ...(whatsapp.config as Record<string, string | number | boolean>),
+                name: whatsapp.name,
+                ...sanitizeWhatsappConnectionConfig(whatsapp.config),
                 status: whatsapp.status,
-                lastSyncMessage: whatsapp.lastSyncMessage
+                lastSyncMessage: whatsapp.lastSyncMessage,
               }
             : undefined
         }

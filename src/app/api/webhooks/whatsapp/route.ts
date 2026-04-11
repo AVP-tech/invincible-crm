@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
-import { findWhatsappIntegrationByVerifyToken, findWhatsappIntegrationByPhoneNumberId } from "@/features/integrations/service";
+import {
+  findWhatsappIntegrationByVerifyToken,
+  findWhatsappIntegrationByPhoneNumberId,
+  markWhatsappIntegrationVerified,
+} from "@/features/integrations/service";
 import { enqueueBackgroundJob } from "@/features/jobs/service";
 import { JobType } from "@prisma/client";
 
@@ -16,6 +20,7 @@ export async function GET(request: Request) {
     const connection = await findWhatsappIntegrationByVerifyToken(token);
     
     if (connection) {
+      await markWhatsappIntegrationVerified(connection.id);
       // The token matches! Meta expects ONLY the challenge string to be returned as plain text.
       return new NextResponse(challenge, { status: 200 });
     } else {

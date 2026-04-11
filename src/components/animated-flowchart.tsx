@@ -24,7 +24,7 @@ const containerVariants = {
     opacity: 1,
     transition: { staggerChildren: 0.18, delayChildren: 0.2 },
   },
-};
+} as const;
 
 const nodeVariants = {
   hidden: { opacity: 0, y: 40, scale: 0.85 },
@@ -32,7 +32,7 @@ const nodeVariants = {
     opacity: 1,
     y: 0,
     scale: 1,
-    transition: { type: "spring", stiffness: 260, damping: 22 },
+    transition: { type: "spring" as const, stiffness: 260, damping: 22 },
   },
 };
 
@@ -41,7 +41,7 @@ const lineVariants = {
   visible: {
     pathLength: 1,
     opacity: 1,
-    transition: { duration: 0.8, ease: "easeInOut" },
+    transition: { duration: 0.8, ease: "easeInOut" as const },
   },
 };
 
@@ -49,7 +49,7 @@ const pulseVariants = {
   visible: {
     scale: [1, 1.15, 1],
     opacity: [0.7, 1, 0.7],
-    transition: { repeat: Infinity, duration: 2.4, ease: "easeInOut" },
+    transition: { repeat: Infinity, duration: 2.4, ease: "easeInOut" as const },
   },
 };
 
@@ -93,7 +93,7 @@ function FlowNode({
     <motion.div
       variants={nodeVariants}
       whileHover={{ scale: 1.06, y: -4 }}
-      transition={{ type: "spring", stiffness: 400, damping: 20 }}
+      transition={{ type: "spring" as const, stiffness: 400, damping: 20 }}
       className={`relative flex items-center gap-3 rounded-2xl border ${borderColor} ${bgColor} ${sizeClasses[size]} shadow-lg backdrop-blur-xl cursor-default select-none`}
       style={{ boxShadow: `0 8px 32px ${glowColor}` }}
     >

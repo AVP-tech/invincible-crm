@@ -68,7 +68,7 @@ export default async function SettingsPage() {
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-ink">Automations Engine</p>
-                  <p className="mt-1 text-sm text-slate-500">Construct "If This, Then That" rules to automate routine tasks and documentation.</p>
+                  <p className="mt-1 text-sm text-slate-500">Construct &quot;If This, Then That&quot; rules to automate routine tasks and documentation.</p>
                 </div>
               </div>
               <Link href="/automations">

@@ -15,7 +15,7 @@ export async function POST(request: Request) {
       return jsonError("Only workspace managers can configure IMAP settings.", 403);
     }
 
-    const { name, ...json } = await readJson(request);
+    const { name, ...json } = (await readJson(request)) as Record<string, any>;
     const parsed = emailIntegrationInputSchema.safeParse({ name: name || "Primary Inbox", ...json });
 
     if (!parsed.success) {

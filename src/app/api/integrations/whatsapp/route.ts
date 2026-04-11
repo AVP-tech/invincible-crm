@@ -10,12 +10,12 @@ export async function POST(request: Request) {
     if (!user) {
       return jsonError("Unauthorized", 401);
     }
-    
+
     if (!canManageWorkspace(user)) {
       return jsonError("Only workspace managers can configure WhatsApp settings.", 403);
     }
 
-    const { name, ...json } = await readJson(request);
+    const { name, ...json } = (await readJson(request)) as Record<string, any>;
     const parsed = whatsappIntegrationInputSchema.safeParse({ name: name || "Primary WhatsApp", ...json });
 
     if (!parsed.success) {

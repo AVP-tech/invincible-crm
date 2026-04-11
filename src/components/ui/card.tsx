@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 type CardProps = React.HTMLAttributes<HTMLDivElement>;
 
 export function Card({ className, ...props }: CardProps) {
-  return <div className={cn("surface rounded-4xl", className)} {...props} />;
+  return <div className={cn("surface card-hover-lift rounded-4xl", className)} {...props} />;
 }
 
 export function CardHeader({ className, ...props }: CardProps) {

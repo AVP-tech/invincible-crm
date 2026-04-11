@@ -3,17 +3,18 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-const LETTERS = "INVISIBLE".split("");
+const LETTERS = "INVINCIBLE".split("");
 
-const PARTICLES = Array.from({ length: 50 }, (_, i) => ({
+const PARTICLES = Array.from({ length: 60 }, (_, i) => ({
   id: i,
   x: ((i * 37 + 13) % 97) + 1.5,
   y: ((i * 53 + 7) % 97) + 1.5,
-  size: 1 + (i % 3),
+  size: 1 + (i % 4),
   speed: 5 + (i % 7) * 2,
   delay: (i % 11) * 0.5,
   amplitude: 8 + (i % 5) * 6,
   brightness: 0.12 + (i % 5) * 0.06,
+  isGold: i % 3 === 0,
 }));
 
 export function CinematicIntro({ onComplete }: { onComplete: () => void }) {
@@ -52,13 +53,19 @@ export function CinematicIntro({ onComplete }: { onComplete: () => void }) {
             {PARTICLES.map((p) => (
               <motion.div
                 key={p.id}
-                className="absolute rounded-full bg-white"
+                className="absolute rounded-full"
                 style={{
                   left: `${p.x}%`,
                   top: `${p.y}%`,
                   width: p.size,
                   height: p.size,
                   opacity: p.brightness,
+                  background: p.isGold
+                    ? "radial-gradient(circle, #f6d486, #e8a930)"
+                    : "white",
+                  boxShadow: p.isGold
+                    ? "0 0 6px rgba(230,193,106,0.4)"
+                    : "none",
                 }}
                 animate={
                   animating
@@ -77,14 +84,14 @@ export function CinematicIntro({ onComplete }: { onComplete: () => void }) {
             ))}
           </div>
 
-          {/* ── Breathing Core Glow ── */}
+          {/* ── Breathing Core Glow — golden ── */}
           {!animating && (
             <motion.div
               className="pointer-events-none absolute rounded-full"
               style={{
-                width: 220,
-                height: 220,
-                background: "radial-gradient(circle, rgba(100,140,255,0.07), transparent 70%)",
+                width: 280,
+                height: 280,
+                background: "radial-gradient(circle, rgba(230,193,106,0.1), rgba(100,140,255,0.04), transparent 70%)",
               }}
               animate={{ scale: [1, 1.4, 1], opacity: [0.3, 0.6, 0.3] }}
               transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
@@ -94,22 +101,25 @@ export function CinematicIntro({ onComplete }: { onComplete: () => void }) {
           {/* ── Animation Sequence ── */}
           {animating && (
             <>
-              {/* Flash */}
+              {/* Golden Flash */}
               <motion.div
-                className="absolute inset-0 bg-white"
+                className="absolute inset-0"
+                style={{
+                  background: "linear-gradient(135deg, #f6d486, #ffffff, #e8a930)",
+                }}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: [0, 0.85, 0] }}
-                transition={{ duration: 0.4, ease: "easeOut" }}
+                transition={{ duration: 0.5, ease: "easeOut" }}
               />
 
-              {/* Lens Flare */}
+              {/* Golden Lens Flare */}
               <motion.div
                 className="absolute left-0 right-0 h-[2px]"
                 style={{
                   top: "50%",
                   background:
-                    "linear-gradient(90deg, transparent, rgba(120,160,255,0.5) 25%, rgba(255,255,255,0.9) 50%, rgba(120,160,255,0.5) 75%, transparent)",
-                  boxShadow: "0 0 40px 15px rgba(120,160,255,0.2)",
+                    "linear-gradient(90deg, transparent, rgba(230,193,106,0.6) 25%, rgba(255,255,255,0.9) 50%, rgba(230,193,106,0.6) 75%, transparent)",
+                  boxShadow: "0 0 40px 15px rgba(230,193,106,0.25)",
                 }}
                 initial={{ scaleX: 0, opacity: 0 }}
                 animate={{ scaleX: [0, 1.2, 1], opacity: [0, 1, 0.08] }}
@@ -125,27 +135,39 @@ export function CinematicIntro({ onComplete }: { onComplete: () => void }) {
                 }}
                 transition={{ delay: 1.7, duration: 0.4, ease: "easeOut" }}
               >
-                {/* Glow Backdrop */}
+                {/* Glow Backdrop — golden */}
                 <motion.div
                   className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
                   style={{
                     width: 700,
                     height: 300,
-                    background: "radial-gradient(ellipse, rgba(100,140,255,0.12), transparent 70%)",
+                    background: "radial-gradient(ellipse, rgba(230,193,106,0.15), rgba(100,140,255,0.06), transparent 70%)",
                   }}
                   initial={{ opacity: 0, scale: 0.3 }}
                   animate={{ opacity: [0, 1, 0.6], scale: [0.3, 1.1, 1] }}
                   transition={{ duration: 2, ease: "easeOut" }}
                 />
 
-                {/* INVISIBLE — letter by letter materialization */}
+                {/* Crown Icon */}
+                <motion.div
+                  className="mx-auto mb-4 flex items-center justify-center"
+                  initial={{ opacity: 0, scale: 0, rotate: -180 }}
+                  animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                  transition={{ delay: 0.15, duration: 0.8, type: "spring", stiffness: 200, damping: 15 }}
+                >
+                  <span style={{ fontSize: "2.5rem", filter: "drop-shadow(0 0 20px rgba(230,193,106,0.5))" }}>
+                    👑
+                  </span>
+                </motion.div>
+
+                {/* INVINCIBLE — letter by letter materialization */}
                 <div className="flex items-center justify-center">
                   {LETTERS.map((letter, i) => (
                     <motion.span
                       key={i}
                       className="inline-block font-serif"
                       style={{
-                        fontSize: "clamp(3rem, 12vw, 9rem)",
+                        fontSize: "clamp(2.5rem, 10vw, 8rem)",
                         fontWeight: 700,
                         lineHeight: 0.95,
                         letterSpacing: "-0.04em",
@@ -162,10 +184,11 @@ export function CinematicIntro({ onComplete }: { onComplete: () => void }) {
                         scale: 1,
                         filter: "blur(0px)",
                         textShadow:
-                          "0 0 60px rgba(120,160,255,0.5), 0 0 120px rgba(120,160,255,0.15)",
+                          "0 0 60px rgba(230,193,106,0.6), 0 0 120px rgba(230,193,106,0.2)",
+                        color: "#ffffff",
                       }}
                       transition={{
-                        delay: 0.35 + i * 0.1,
+                        delay: 0.35 + i * 0.08,
                         duration: 0.65,
                         ease: [0.25, 1, 0.5, 1],
                       }}
@@ -175,7 +198,7 @@ export function CinematicIntro({ onComplete }: { onComplete: () => void }) {
                   ))}
                 </div>
 
-                {/* CRM — impact drop */}
+                {/* CRM — golden impact drop */}
                 <motion.div
                   initial={{ opacity: 0, y: -35, scale: 2 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -193,38 +216,53 @@ export function CinematicIntro({ onComplete }: { onComplete: () => void }) {
                       fontSize: "clamp(1.5rem, 5vw, 3.5rem)",
                       fontWeight: 600,
                       letterSpacing: "0.4em",
-                      color: "rgba(255,255,255,0.75)",
-                      textShadow: "0 0 40px rgba(100,140,255,0.35)",
+                      background: "linear-gradient(135deg, #f6d486, #e8a930, #f6d486)",
+                      WebkitBackgroundClip: "text",
+                      backgroundClip: "text",
+                      color: "transparent",
+                      textShadow: "none",
+                      filter: "drop-shadow(0 0 30px rgba(230,193,106,0.4))",
                     }}
                   >
                     CRM
                   </span>
                 </motion.div>
 
-                {/* Shockwave Ring */}
+                {/* Shockwave Ring 1 */}
                 <motion.div
-                  className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/25"
+                  className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
+                  style={{ border: "1px solid rgba(230,193,106,0.35)" }}
                   initial={{ width: 10, height: 10, opacity: 0.7 }}
                   animate={{ width: 900, height: 900, opacity: 0 }}
                   transition={{ delay: 1.85, duration: 1.2, ease: "easeOut" }}
                 />
 
+                {/* Shockwave Ring 2 — delayed */}
+                <motion.div
+                  className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
+                  style={{ border: "2px solid rgba(230,193,106,0.2)" }}
+                  initial={{ width: 10, height: 10, opacity: 0.5 }}
+                  animate={{ width: 1200, height: 1200, opacity: 0 }}
+                  transition={{ delay: 2.0, duration: 1.5, ease: "easeOut" }}
+                />
+
                 {/* Tagline */}
                 <motion.p
-                  className="mt-8 text-lg tracking-wide text-white/50"
+                  className="mt-8 text-lg tracking-wide"
+                  style={{ color: "rgba(230,193,106,0.7)" }}
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 2.8, duration: 0.8, ease: "easeOut" }}
                 >
-                  AI-first CRM for businesses that hate admin.
+                  The CRM that never drops the ball.
                 </motion.p>
               </motion.div>
 
-              {/* Expanding edge glow */}
+              {/* Expanding edge glow — golden */}
               <motion.div
                 className="pointer-events-none absolute inset-0"
                 style={{
-                  boxShadow: "inset 0 0 120px 40px rgba(80,120,220,0.08)",
+                  boxShadow: "inset 0 0 120px 40px rgba(230,193,106,0.06)",
                 }}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: [0, 1, 0.3] }}
@@ -245,11 +283,12 @@ export function CinematicIntro({ onComplete }: { onComplete: () => void }) {
                 transition={{ duration: 0.6 }}
               >
                 <motion.div
-                  className="h-12 w-12 rounded-full border border-white/15"
+                  className="h-12 w-12 rounded-full"
+                  style={{ border: "1px solid rgba(230,193,106,0.2)" }}
                   animate={{ scale: [1, 1.5, 1], opacity: [0.25, 0.08, 0.25] }}
                   transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
                 />
-                <p className="text-xs font-semibold uppercase tracking-[0.4em] text-white/20">
+                <p className="text-xs font-semibold uppercase tracking-[0.4em]" style={{ color: "rgba(230,193,106,0.3)" }}>
                   Click anywhere to awaken
                 </p>
               </motion.div>

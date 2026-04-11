@@ -1,7 +1,7 @@
 const devSessionSecret = "local-dev-session-secret-change-me";
 
 export const env = {
-  appName: process.env.NEXT_PUBLIC_APP_NAME ?? "Invisible CRM",
+  appName: process.env.NEXT_PUBLIC_APP_NAME ?? "Invincible CRM",
   sessionSecret: process.env.SESSION_SECRET ?? devSessionSecret,
   demoUserEmail: process.env.DEMO_USER_EMAIL ?? "demo@invisiblecrm.local",
   demoUserPassword: process.env.DEMO_USER_PASSWORD ?? "demo12345",

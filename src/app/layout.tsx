@@ -15,8 +15,8 @@ const serif = Fraunces({
 });
 
 export const metadata: Metadata = {
-  title: "Invisible CRM",
-  description: "AI-first CRM for very small businesses"
+  title: "Invincible CRM",
+  description: "AI-first CRM that never drops the ball"
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

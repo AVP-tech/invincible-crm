@@ -102,7 +102,7 @@ export function NotificationCenter() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -10, scale: 0.95 }}
               transition={{ type: "spring", stiffness: 400, damping: 30 }}
-              className="absolute right-0 top-12 z-50 w-[360px] overflow-hidden rounded-3xl border border-black/5 bg-white shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] backdrop-blur-2xl dark:border-white/10 dark:bg-slate-900 dark:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)]"
+              className="absolute right-0 top-12 z-50 w-[360px] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl dark:border-white/10 dark:bg-slate-900"
             >
               {/* Header */}
               <div className="flex items-center justify-between border-b border-black/5 px-5 py-4 dark:border-white/5">
@@ -135,7 +135,7 @@ export function NotificationCenter() {
               </div>
 
               {/* List */}
-              <div className="max-h-[420px] overflow-y-auto overflow-x-hidden">
+              <div className="max-h-[420px] overflow-y-auto overflow-x-hidden bg-white dark:bg-slate-900">
                 {notifications.length === 0 ? (
                   <motion.div 
                     initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
@@ -144,15 +144,15 @@ export function NotificationCenter() {
                     All caught up 🎉
                   </motion.div>
                 ) : (
-                  <ul className="p-2 flex flex-col gap-0.5">
+                  <ul className="p-2 flex flex-col gap-0.5 relative z-10">
                     <AnimatePresence initial={false}>
                       {notifications.map((notif) => {
                         const Icon = notif.icon;
                         return (
                           <motion.li
                             key={notif.id}
-                            initial={{ opacity: 0, height: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, height: "auto", scale: 1 }}
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, height: 0, scale: 0.95 }}
                             transition={{ duration: 0.2 }}
                             className={`group relative flex gap-3 rounded-2xl p-3 transition-colors ${

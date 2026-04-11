@@ -144,27 +144,16 @@ export function NotificationCenter() {
                     All caught up 🎉
                   </motion.div>
                 ) : (
-                  <motion.ul 
-                    initial="hidden"
-                    animate="visible"
-                    variants={{
-                      hidden: { opacity: 0 },
-                      visible: { opacity: 1, transition: { staggerChildren: 0.05 } }
-                    }}
-                    className="p-2 space-y-0.5"
-                  >
-                    <AnimatePresence>
+                  <ul className="p-2 flex flex-col gap-0.5">
+                    <AnimatePresence initial={false}>
                       {notifications.map((notif) => {
                         const Icon = notif.icon;
                         return (
                           <motion.li
                             key={notif.id}
-                            layout
-                            variants={{
-                              hidden: { opacity: 0, x: 20 },
-                              visible: { opacity: 1, x: 0 },
-                            }}
-                            exit={{ opacity: 0, scale: 0.95, x: -20 }}
+                            initial={{ opacity: 0, height: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, height: "auto", scale: 1 }}
+                            exit={{ opacity: 0, height: 0, scale: 0.95 }}
                             transition={{ duration: 0.2 }}
                             className={`group relative flex gap-3 rounded-2xl p-3 transition-colors ${
                               !notif.read
@@ -202,7 +191,7 @@ export function NotificationCenter() {
                         );
                       })}
                     </AnimatePresence>
-                  </motion.ul>
+                  </ul>
                 )}
               </div>
             </motion.div>

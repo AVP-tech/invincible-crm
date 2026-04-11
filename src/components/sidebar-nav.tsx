@@ -16,6 +16,7 @@ const navSections: NavSection[] = [
     label: "Core",
     items: [
       { href: "/dashboard" as Route, label: "Dashboard", icon: LayoutDashboard },
+      { href: "/guide" as Route, label: "Guide", icon: BookOpen },
       { href: "/contacts" as Route, label: "Contacts", icon: Users },
       { href: "/deals" as Route, label: "Deals", icon: KanbanSquare },
       { href: "/tasks" as Route, label: "Tasks", icon: CheckSquare },
@@ -36,7 +37,6 @@ const navSections: NavSection[] = [
       { href: "/integrations" as Route, label: "Integrations", icon: PlugZap },
       { href: "/finance" as Route, label: "Finance", icon: ReceiptText },
       { href: "/capture" as Route, label: "AI Capture", icon: Sparkles },
-      { href: "/guide" as Route, label: "Guide", icon: BookOpen },
       { href: "/imports" as Route, label: "Imports", icon: Upload },
       { href: "/search" as Route, label: "Search", icon: Search },
       { href: "/settings" as Route, label: "Settings", icon: Settings },

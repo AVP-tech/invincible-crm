@@ -102,7 +102,7 @@ export function NotificationCenter() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -10, scale: 0.95 }}
               transition={{ type: "spring", stiffness: 400, damping: 30 }}
-              className="absolute right-0 top-12 z-50 w-[360px] overflow-hidden rounded-3xl border border-black/5 bg-white/95 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] backdrop-blur-2xl dark:border-white/10 dark:bg-slate-900/95 dark:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)]"
+              className="absolute right-0 top-12 z-50 w-[360px] overflow-hidden rounded-3xl border border-black/5 bg-white shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] backdrop-blur-2xl dark:border-white/10 dark:bg-slate-900 dark:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)]"
             >
               {/* Header */}
               <div className="flex items-center justify-between border-b border-black/5 px-5 py-4 dark:border-white/5">

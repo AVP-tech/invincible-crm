@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { AnimatedStatsGrid } from "@/components/animated-stats-grid";
+import { CometBorder } from "@/components/comet-border";
 
 export default async function DashboardPage() {
   const user = await requireUser();
@@ -64,8 +65,9 @@ export default async function DashboardPage() {
       </AnimatedStatsGrid>
 
       <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-        <Card>
-          <CardHeader>
+        <CometBorder isActive={true} radius="1.5rem" duration={3.2}>
+          <Card className="h-full border-transparent">
+            <CardHeader>
             <div>
               <p className="text-sm font-semibold text-ink">Today’s tasks</p>
               <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">The follow-ups that should happen before the day closes.</p>
@@ -97,6 +99,7 @@ export default async function DashboardPage() {
             )}
           </CardContent>
         </Card>
+      </CometBorder>
 
         <Card>
           <CardHeader>
@@ -140,8 +143,9 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
+        <CometBorder isActive={true} radius="1.5rem" duration={4}>
+          <Card className="h-full border-transparent">
+            <CardHeader>
             <div>
               <p className="text-sm font-semibold text-ink">Recent activity</p>
               <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">A running pulse of meaningful CRM actions.</p>
@@ -151,6 +155,7 @@ export default async function DashboardPage() {
             <ActivityList activities={dashboard.recentActivities} />
           </CardContent>
         </Card>
+      </CometBorder>
       </div>
     </div>
   );

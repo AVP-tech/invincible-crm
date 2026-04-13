@@ -222,16 +222,8 @@ export function CaptureForm({ defaultInput = "" }: CaptureFormProps) {
         Tailwind's `rounded-3xl` = 1.5 rem
         Adjust `radius` to match whatever your <Card> actually uses.
       */}
-      <CometBorder isActive={isParsing} radius="1rem" duration={2.6}>
-        <Card
-          /*
-            Make sure the Card itself has NO opaque ring of its own that would
-            sit on top of the comet ring.  If your Card already has a border,
-            add  border-transparent  or  border-0  here while isParsing is true.
-            Example:
-              className={isParsing ? "border-transparent" : undefined}
-          */
-        >
+      <CometBorder isActive={isParsing || input.length > 0} radius="1rem" duration={2.6}>
+        <Card className={isParsing || input.length > 0 ? "border-transparent" : "transition-colors"}>
           <CardHeader>
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.3em] text-moss">

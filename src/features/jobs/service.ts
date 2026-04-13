@@ -17,6 +17,18 @@ export async function listBackgroundJobs(workspaceId: string) {
   });
 }
 
+export async function getBackgroundJob(workspaceId: string, jobId: string) {
+  return db.backgroundJob.findFirst({
+    where: {
+      id: jobId,
+      workspaceId
+    },
+    include: {
+      integrationConnection: true
+    }
+  });
+}
+
 export async function enqueueBackgroundJob(
   workspaceId: string,
   type: JobType,
@@ -100,9 +112,10 @@ export async function processBackgroundJob(jobId: string) {
   }
 }
 
-export async function processDueJobs(limit = 10) {
+export async function processDueJobs(limit = 10, workspaceId?: string) {
   const jobs = await db.backgroundJob.findMany({
     where: {
+      ...(workspaceId ? { workspaceId } : {}),
       status: JobStatus.QUEUED,
       scheduledFor: {
         lte: new Date()

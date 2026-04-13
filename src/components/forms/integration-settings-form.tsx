@@ -3,13 +3,17 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { IntegrationStatusBadge } from "@/components/status-badges";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { formatDateTime } from "@/lib/utils";
 
 type IntegrationSettingsFormProps = {
   canManage: boolean;
   webhookUrl: string;
+  webhookSecurityEnabled: boolean;
   emailDefaults?: {
     name?: string;
     host?: string;
@@ -20,6 +24,7 @@ type IntegrationSettingsFormProps = {
     hasPassword?: boolean;
     status?: string;
     lastSyncMessage?: string | null;
+    lastSyncedAt?: string | null;
   };
   whatsappDefaults?: {
     name?: string;
@@ -28,10 +33,17 @@ type IntegrationSettingsFormProps = {
     hasAccessToken?: boolean;
     status?: string;
     lastSyncMessage?: string | null;
+    lastSyncedAt?: string | null;
   };
 };
 
-export function IntegrationSettingsForm({ canManage, webhookUrl, emailDefaults, whatsappDefaults }: IntegrationSettingsFormProps) {
+export function IntegrationSettingsForm({
+  canManage,
+  webhookUrl,
+  webhookSecurityEnabled,
+  emailDefaults,
+  whatsappDefaults
+}: IntegrationSettingsFormProps) {
   const router = useRouter();
   const [emailName, setEmailName] = useState(emailDefaults?.name ?? "Primary inbox");
   const [host, setHost] = useState(emailDefaults?.host ?? "");
@@ -76,7 +88,7 @@ export function IntegrationSettingsForm({ canManage, webhookUrl, emailDefaults, 
       return;
     }
 
-    toast.success("Email integration saved");
+    toast.success(payload.connection?.lastSyncMessage ?? "Email integration saved");
     setPassword("");
     router.refresh();
   }
@@ -94,7 +106,7 @@ export function IntegrationSettingsForm({ canManage, webhookUrl, emailDefaults, 
       return;
     }
 
-    toast.success("Email sync queued");
+    toast.success(payload.lastSyncMessage ?? "Email sync finished");
     router.refresh();
   }
 
@@ -121,7 +133,7 @@ export function IntegrationSettingsForm({ canManage, webhookUrl, emailDefaults, 
       return;
     }
 
-    toast.success("WhatsApp integration saved");
+    toast.success(payload.connection?.lastSyncMessage ?? "WhatsApp integration saved");
     setAccessToken("");
     router.refresh();
   }
@@ -139,7 +151,7 @@ export function IntegrationSettingsForm({ canManage, webhookUrl, emailDefaults, 
       return;
     }
 
-    toast.success(`Processed ${payload.processed ?? 0} job(s)`);
+    toast.success(payload.processed ? `Processed ${payload.processed} job(s)` : "No queued jobs to process");
     router.refresh();
   }
 
@@ -149,6 +161,12 @@ export function IntegrationSettingsForm({ canManage, webhookUrl, emailDefaults, 
         <div>
           <p className="text-lg font-semibold text-ink">Email sync</p>
           <p className="mt-1 text-sm text-slate-500">Connect a shared mailbox over IMAP and pull fresh email context into the CRM.</p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {emailDefaults?.status ? <IntegrationStatusBadge status={emailDefaults.status} /> : <Badge className="bg-slate-100 text-slate-700">Not configured</Badge>}
+            <Badge className={emailDefaults?.hasPassword ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-800"}>
+              {emailDefaults?.hasPassword ? "Password saved" : "Password needed"}
+            </Badge>
+          </div>
         </div>
         <div className="grid gap-4 md:grid-cols-2">
           <Field label="Connection name">
@@ -192,7 +210,10 @@ export function IntegrationSettingsForm({ canManage, webhookUrl, emailDefaults, 
           </Button>
         </div>
         <p className="text-xs text-slate-500">Saving now verifies the mailbox before it is marked connected.</p>
-        {emailDefaults?.status ? <p className="text-sm text-slate-500">Status: {emailDefaults.status}</p> : null}
+        <div className="space-y-1 text-sm text-slate-500">
+          <p>Last email activity: {formatDateTime(emailDefaults?.lastSyncedAt)}</p>
+          {emailDefaults?.status ? <p>Status: {emailDefaults.status}</p> : null}
+        </div>
         {emailDefaults?.lastSyncMessage ? <p className="text-sm text-slate-500">{emailDefaults.lastSyncMessage}</p> : null}
       </form>
 
@@ -200,6 +221,15 @@ export function IntegrationSettingsForm({ canManage, webhookUrl, emailDefaults, 
         <div>
           <p className="text-lg font-semibold text-ink">WhatsApp sync</p>
           <p className="mt-1 text-sm text-slate-500">Use the Meta webhook path below to ingest incoming WhatsApp messages into the CRM automatically.</p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {whatsappDefaults?.status ? <IntegrationStatusBadge status={whatsappDefaults.status} /> : <Badge className="bg-slate-100 text-slate-700">Not configured</Badge>}
+            <Badge className={whatsappDefaults?.hasAccessToken ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-800"}>
+              {whatsappDefaults?.hasAccessToken ? "Access token saved" : "Access token missing"}
+            </Badge>
+            <Badge className={webhookSecurityEnabled ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-800"}>
+              {webhookSecurityEnabled ? "Webhook signing on" : "Webhook signing off"}
+            </Badge>
+          </div>
         </div>
         <div className="grid gap-4 md:grid-cols-2">
           <Field label="Connection name">
@@ -236,7 +266,10 @@ export function IntegrationSettingsForm({ canManage, webhookUrl, emailDefaults, 
           </Button>
         </div>
         <p className="text-xs text-slate-500">Paste this exact URL into your Meta app webhook settings, then subscribe the WhatsApp message events.</p>
-        {whatsappDefaults?.status ? <p className="text-sm text-slate-500">Status: {whatsappDefaults.status}</p> : null}
+        <div className="space-y-1 text-sm text-slate-500">
+          <p>Last WhatsApp activity: {formatDateTime(whatsappDefaults?.lastSyncedAt)}</p>
+          {whatsappDefaults?.status ? <p>Status: {whatsappDefaults.status}</p> : null}
+        </div>
         {whatsappDefaults?.lastSyncMessage ? <p className="text-sm text-slate-500">{whatsappDefaults.lastSyncMessage}</p> : null}
       </form>
     </div>

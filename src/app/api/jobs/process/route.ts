@@ -14,7 +14,7 @@ export async function POST() {
     return jsonError("You do not have permission to process jobs", 403);
   }
 
-  const processed = await processDueJobs();
+  const processed = await processDueJobs(10, user.workspaceId);
 
   return NextResponse.json({ ok: true, processed });
 }

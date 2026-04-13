@@ -22,4 +22,15 @@ describe("fallbackParseCapture", () => {
     expect(preview.deal?.amount).toBe(80000);
     expect(preview.task?.title).toBe("Send proposal to Neha");
   });
+
+  it("prefers contextual amounts over unrelated numbers", () => {
+    const preview = fallbackParseCapture(
+      "Follow up with Neha in 2 days about the website redesign, budget 1.5 lakh, send quote Monday",
+      new Date("2026-04-01T09:00:00.000Z")
+    );
+
+    expect(preview.deal?.amount).toBe(150000);
+    expect(preview.task?.dueDate ? new Date(preview.task.dueDate).getDate() : null).toBe(3);
+    expect(preview.missingFields).toContain("Task priority");
+  });
 });

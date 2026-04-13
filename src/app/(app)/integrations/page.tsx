@@ -8,8 +8,9 @@ import {
 } from "@/features/integrations/service";
 import { listBackgroundJobs } from "@/features/jobs/service";
 import { IntegrationSettingsForm } from "@/components/forms/integration-settings-form";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { IntegrationJobsPanel } from "@/components/integration-jobs-panel";
 import { PageHeader } from "@/components/ui/page-header";
+import { env } from "@/lib/env";
 
 function resolveAppUrl(headerStore: Awaited<ReturnType<typeof headers>>) {
   const forwardedHost = headerStore.get("x-forwarded-host");
@@ -40,6 +41,17 @@ export default async function IntegrationsPage() {
   const canManage = canManageWorkspace(user);
   const email = connections.find((connection) => connection.provider === IntegrationProvider.EMAIL_IMAP);
   const whatsapp = connections.find((connection) => connection.provider === IntegrationProvider.WHATSAPP_META);
+  const serializedJobs = jobs.map((job) => ({
+    id: job.id,
+    type: job.type,
+    status: job.status,
+    attempts: job.attempts,
+    lastError: job.lastError,
+    scheduledFor: job.scheduledFor.toISOString(),
+    startedAt: job.startedAt?.toISOString() ?? null,
+    finishedAt: job.finishedAt?.toISOString() ?? null,
+    integrationConnectionName: job.integrationConnection?.name ?? null
+  }));
 
   return (
     <div className="space-y-6">
@@ -59,6 +71,7 @@ export default async function IntegrationsPage() {
                 ...sanitizeEmailConnectionConfig(email.config),
                 status: email.status,
                 lastSyncMessage: email.lastSyncMessage,
+                lastSyncedAt: email.lastSyncedAt?.toISOString() ?? null,
               }
             : undefined
         }
@@ -69,35 +82,14 @@ export default async function IntegrationsPage() {
                 ...sanitizeWhatsappConnectionConfig(whatsapp.config),
                 status: whatsapp.status,
                 lastSyncMessage: whatsapp.lastSyncMessage,
+                lastSyncedAt: whatsapp.lastSyncedAt?.toISOString() ?? null,
               }
             : undefined
         }
+        webhookSecurityEnabled={Boolean(env.whatsappAppSecret)}
       />
 
-      <Card>
-        <CardHeader>
-          <div>
-            <p className="text-sm font-semibold text-ink">Recent jobs</p>
-            <p className="mt-1 text-sm text-slate-500">Background processing keeps syncs and webhook work from blocking the UI.</p>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {jobs.length ? (
-            jobs.map((job) => (
-              <div key={job.id} className="rounded-3xl border border-black/5 bg-white p-4">
-                <div className="flex flex-wrap items-center gap-2">
-                  <p className="font-semibold text-ink">{job.type.replaceAll("_", " ")}</p>
-                  <span className="rounded-full bg-sand px-3 py-1 text-xs font-semibold text-ink">{job.status}</span>
-                </div>
-                <p className="mt-1 text-sm text-slate-500">{job.integrationConnection?.name ?? "Workspace job"}</p>
-                {job.lastError ? <p className="mt-3 text-sm text-rose-600">{job.lastError}</p> : null}
-              </div>
-            ))
-          ) : (
-            <div className="rounded-3xl bg-sand/60 p-4 text-sm text-slate-600">No background jobs have run yet.</div>
-          )}
-        </CardContent>
-      </Card>
+      <IntegrationJobsPanel canManage={canManage} jobs={serializedJobs} />
     </div>
   );
 }

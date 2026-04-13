@@ -637,6 +637,30 @@ input:focus, textarea:focus, select:focus {
   box-shadow: 0 0 0 3px rgba(230, 193, 106, 0.15);
 }
 
+html.dark input:not([type="checkbox"]):not([type="radio"]),
+html.dark textarea,
+html.dark select {
+  color-scheme: dark;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: rgb(148 163 184);
+  opacity: 1;
+}
+
+html.dark input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(0.85);
+  opacity: 0.9;
+}
+
+html.dark input:-webkit-autofill,
+html.dark textarea:-webkit-autofill,
+html.dark select:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 1000px rgba(2, 6, 23, 0.92) inset;
+  -webkit-text-fill-color: rgb(226 232 240);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .cinematic-blackout,
   .cinematic-title,

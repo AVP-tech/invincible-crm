@@ -40,7 +40,7 @@ export default async function SettingsPage() {
             </div>
           </CardHeader>
           <CardContent className="space-y-4 text-sm text-slate-600">
-            <div className="rounded-3xl bg-white p-4">
+            <div className="rounded-3xl bg-white/95 p-4 dark:border dark:border-slate-800 dark:bg-slate-950/60">
               <p className="font-semibold text-ink">{env.openAiApiKey ? "OpenAI enabled" : "Fallback parser enabled"}</p>
               <p className="mt-2">
                 {env.openAiApiKey
@@ -48,7 +48,7 @@ export default async function SettingsPage() {
                   : "No OPENAI_API_KEY was found, so the app still works using the built-in deterministic parser for common commands."}
               </p>
             </div>
-            <div className="rounded-3xl bg-white p-4">
+            <div className="rounded-3xl bg-white/95 p-4 dark:border dark:border-slate-800 dark:bg-slate-950/60">
               <p className="font-semibold text-ink">Demo account</p>
               <p className="mt-2">{env.demoUserEmail}</p>
             </div>

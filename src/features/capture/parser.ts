@@ -1,4 +1,6 @@
 import { DealStage, TaskPriority } from "@prisma/client";
+import { google } from "@ai-sdk/google";
+import { generateObject } from "ai";
 import OpenAI from "openai";
 import { db } from "@/lib/db";
 import { resolveRelativeDate } from "@/lib/date-parser";
@@ -9,6 +11,8 @@ import { isNonEmptyString, titleCase } from "@/lib/utils";
 const systemPrompt = `
 You convert natural-language CRM updates into a structured JSON preview for a simple CRM.
 Return valid JSON only.
+Extract dates and money aggressively when the user implies them.
+Examples: "budget 80k" => amount 80000, "1.5 lakh" => 150000, "send proposal Friday" => due or close date should be that Friday.
 
 Schema:
 {
@@ -49,19 +53,49 @@ Schema:
 `.trim();
 
 function extractAmount(input: string) {
-  const match = input.toLowerCase().match(/(\d+(?:\.\d+)?)\s*(k|lakh|lac|m|million)?/);
+  const normalized = input.toLowerCase();
+  const contextualPatterns = [
+    /\b(?:budget|amount|price|pricing|value|worth|quote|proposal|deal value|deal worth|cost)\s*(?:is|of|for|around|about|at)?\s*(?:rs\.?|inr|usd|eur|\$|€|₹)?\s*([0-9][0-9,]*(?:\.\d+)?)\s*(k|thousand|l|lac|lakh|m|mn|million|cr|crore)?\b/i,
+    /\b(?:rs\.?|inr|usd|eur|\$|€|₹)\s*([0-9][0-9,]*(?:\.\d+)?)\s*(k|thousand|l|lac|lakh|m|mn|million|cr|crore)?\b/i,
+    /\b([0-9][0-9,]*(?:\.\d+)?)\s*(k|thousand|l|lac|lakh|m|mn|million|cr|crore)\b/i
+  ];
 
-  if (!match) return undefined;
+  const parseAmount = (rawAmount: string, rawMultiplier?: string) => {
+    const base = Number(rawAmount.replace(/,/g, ""));
+    const multiplier = rawMultiplier?.toLowerCase();
 
-  const base = Number(match[1]);
-  const multiplier = match[2];
+    if (!Number.isFinite(base)) return undefined;
+    if (!multiplier) return base >= 1000 ? base : undefined;
+    if (multiplier === "k" || multiplier === "thousand") return base * 1000;
+    if (multiplier === "m" || multiplier === "mn" || multiplier === "million") return base * 1_000_000;
+    if (multiplier === "cr" || multiplier === "crore") return base * 10_000_000;
 
-  if (!Number.isFinite(base)) return undefined;
-  if (!multiplier) return base;
-  if (multiplier === "k") return base * 1000;
-  if (multiplier === "m" || multiplier === "million") return base * 1_000_000;
+    return base * 100_000;
+  };
 
-  return base * 100_000;
+  for (const pattern of contextualPatterns) {
+    const match = normalized.match(pattern);
+
+    if (match?.[1]) {
+      return parseAmount(match[1], match[2]);
+    }
+  }
+
+  return undefined;
+}
+
+function deriveCurrency(input: string) {
+  const normalized = input.toLowerCase();
+
+  if (/\b(?:usd|dollars?)\b/.test(normalized) || input.includes("$")) {
+    return "USD";
+  }
+
+  if (/\b(?:eur|euros?)\b/.test(normalized) || input.includes("€")) {
+    return "EUR";
+  }
+
+  return "INR";
 }
 
 function deriveContactName(input: string) {
@@ -146,11 +180,55 @@ function deriveDealTitle(input: string, contactName?: string) {
   return contactName ? `${contactName} opportunity` : undefined;
 }
 
+function uniqueItems(items: string[]) {
+  return Array.from(new Set(items.filter(Boolean)));
+}
+
+function mergeCapturePreview(preferred: CapturePreview, fallback: CapturePreview): CapturePreview {
+  const mergedContact = preferred.contact || fallback.contact
+    ? {
+        ...fallback.contact,
+        ...preferred.contact,
+        tags: uniqueItems([...(fallback.contact?.tags ?? []), ...(preferred.contact?.tags ?? [])])
+      }
+    : undefined;
+
+  const mergedDeal = preferred.deal || fallback.deal
+    ? {
+        ...fallback.deal,
+        ...preferred.deal,
+        currency: preferred.deal?.currency ?? fallback.deal?.currency ?? "INR"
+      }
+    : undefined;
+
+  const mergedTask = preferred.task || fallback.task
+    ? {
+        ...fallback.task,
+        ...preferred.task
+      }
+    : undefined;
+
+  return capturePreviewSchema.parse({
+    ...fallback,
+    ...preferred,
+    actionType:
+      preferred.actionType !== "note" || fallback.actionType === "note" ? preferred.actionType : fallback.actionType,
+    confidence: Math.max(preferred.confidence, fallback.confidence),
+    missingFields: uniqueItems([...(preferred.missingFields ?? []), ...(fallback.missingFields ?? [])]),
+    suggestedUpdates: uniqueItems([...(preferred.suggestedUpdates ?? []), ...(fallback.suggestedUpdates ?? [])]),
+    contact: mergedContact,
+    deal: mergedDeal,
+    task: mergedTask,
+    note: preferred.note ?? fallback.note
+  });
+}
+
 export function fallbackParseCapture(input: string, baseDate = new Date()): CapturePreview {
   const relativeDate = resolveRelativeDate(input, baseDate);
   const contactName = deriveContactName(input);
   const companyName = deriveCompanyName(input);
   const amount = extractAmount(input);
+  const currency = deriveCurrency(input);
   const wantsTask =
     /\b(call|follow up|follow-up|send|remind|check in|check-in|proposal|quote)\b/i.test(input);
   const wantsDeal = /\b(budget|proposal|quote|interested|deal|wants|need|needs|crm|website)\b/i.test(input);
@@ -163,6 +241,10 @@ export function fallbackParseCapture(input: string, baseDate = new Date()): Capt
     missingFields.push("Contact name");
   }
 
+  if (wantsTask) {
+    missingFields.push("Task priority");
+  }
+
   return capturePreviewSchema.parse({
     actionType: wantsTask && wantsDeal ? "mixed" : wantsDeal ? "create" : wantsTask ? "create" : "note",
     parserMode: "FALLBACK",
@@ -172,7 +254,7 @@ export function fallbackParseCapture(input: string, baseDate = new Date()): Capt
     confidence: contactName ? 0.68 : 0.46,
     missingFields,
     suggestedUpdates: contactName
-      ? ["Review extracted fields before saving"]
+      ? uniqueItems(["Review extracted fields before saving", wantsTask ? "Choose a task priority before saving" : ""])
       : ["Add a contact name so the CRM can connect this update"],
     contact: contactName
       ? {
@@ -188,7 +270,7 @@ export function fallbackParseCapture(input: string, baseDate = new Date()): Capt
           description: note,
           stage,
           amount,
-          currency: "INR",
+          currency,
           expectedCloseDate: relativeDate.date?.toISOString(),
           nextStep: wantsTask ? taskTitle : undefined
         }
@@ -261,51 +343,67 @@ async function findMatches(userId: string, preview: CapturePreview) {
   } satisfies CapturePreview;
 }
 
+async function parseWithGemini(input: string, baseDate = new Date()) {
+  if (!env.googleAiApiKey) return null;
+
+  try {
+    const { object } = await generateObject({
+      model: google(env.googleModel),
+      schema: capturePreviewSchema,
+      prompt: `Reference date: ${baseDate.toISOString()}\nInput: ${input}`,
+      system: systemPrompt,
+    });
+
+    return object;
+  } catch (error) {
+    console.error("Gemini parse failed:", error);
+    return null;
+  }
+}
+
 async function parseWithOpenAi(input: string, baseDate = new Date()) {
   if (!env.openAiApiKey) return null;
 
   const client = new OpenAI({ apiKey: env.openAiApiKey });
 
-  const completion = await client.chat.completions.create({
-    model: env.openAiModel,
-    response_format: {
-      type: "json_object"
-    },
-    messages: [
-      {
-        role: "system",
-        content: systemPrompt
-      },
-      {
-        role: "user",
-        content: `Reference date: ${baseDate.toISOString()}\nInput: ${input}`
-      }
-    ]
-  });
+  try {
+    const completion = await client.chat.completions.create({
+      model: env.openAiModel,
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: `Reference date: ${baseDate.toISOString()}\nInput: ${input}` }
+      ]
+    });
 
-  const raw = completion.choices[0]?.message?.content;
-
-  if (!raw) return null;
-
-  const parsed = capturePreviewSchema.safeParse(JSON.parse(raw));
-
-  if (!parsed.success) {
+    const raw = completion.choices[0]?.message?.content;
+    if (!raw) return null;
+    const parsed = capturePreviewSchema.safeParse(JSON.parse(raw));
+    return parsed.success ? parsed.data : null;
+  } catch (error) {
+    console.error("OpenAI parse failed:", error);
     return null;
   }
-
-  return parsed.data;
 }
 
 export async function parseCapturePreview(userId: string, input: string, baseDate = new Date()) {
+  const fallbackPreview = fallbackParseCapture(input, baseDate);
+
   try {
-    const aiPreview = await parseWithOpenAi(input, baseDate);
+    // Try Gemini First as requested
+    let aiPreview = await parseWithGemini(input, baseDate);
+    
+    // Fallback to OpenAI if Gemini fails or is not configured
+    if (!aiPreview) {
+      aiPreview = await parseWithOpenAi(input, baseDate);
+    }
 
     if (aiPreview) {
-      return findMatches(userId, aiPreview);
+      return findMatches(userId, mergeCapturePreview(aiPreview, fallbackPreview));
     }
   } catch (error) {
     console.error("AI capture parse failed, falling back", error);
   }
 
-  return findMatches(userId, fallbackParseCapture(input, baseDate));
+  return findMatches(userId, fallbackPreview);
 }

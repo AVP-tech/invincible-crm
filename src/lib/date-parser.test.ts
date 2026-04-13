@@ -17,4 +17,12 @@ describe("resolveRelativeDate", () => {
     expect(result.matchedText).toBe("next monday");
     expect(result.date?.getDate()).toBe(13);
   });
+
+  it("parses calendar dates with month names", () => {
+    const result = resolveRelativeDate("Send proposal on 12 April", baseDate);
+
+    expect(result.matchedText).toBe("on 12 april");
+    expect(result.date?.getDate()).toBe(12);
+    expect(result.date?.getMonth()).toBe(3);
+  });
 });

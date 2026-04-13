@@ -1,7 +1,9 @@
 import path from "node:path";
 import { defineConfig } from "vitest/config";
 
-process.env.DATABASE_URL = "file:./test.db";
+const testDatabasePath = path.resolve(__dirname, "prisma", "test.db").replace(/\\/g, "/");
+
+process.env.DATABASE_URL = `file:${testDatabasePath}`;
 process.env.SESSION_SECRET = "test-session-secret";
 
 export default defineConfig({

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { IntegrationProvider, JobType } from "@prisma/client";
+import { IntegrationProvider, JobStatus, JobType } from "@prisma/client";
 import { getApiUser, canManageWorkspace } from "@/lib/auth";
 import { jsonError } from "@/lib/http";
 import { getIntegrationConnection } from "@/features/integrations/service";
@@ -21,8 +21,6 @@ export async function POST() {
       return jsonError("Email integration is not configured. Please save credentials first.", 404);
     }
 
-    // Since processBackgroundJob in service handles running the job if RUN_JOBS_INLINE !== "false",
-    // enqueuing this job will automatically sink emails internally and wait for it!
     const job = await enqueueBackgroundJob(
       user.workspaceId,
       JobType.SYNC_EMAIL,
@@ -30,17 +28,24 @@ export async function POST() {
       connection.id
     );
 
-    // If it ran inline, let's fetch the connection sync data updated by the process
-    const finalConnectionStatus = await getIntegrationConnection(user.workspaceId, IntegrationProvider.EMAIL_IMAP);
-    
-    // Attempt to extract the number of synced emails from lastSyncMessage ("Synced 5 new email message(s)")
-    let syncedCount = 0;
-    const match = finalConnectionStatus?.lastSyncMessage?.match(/Synced (\d+)/);
-    if (match && match[1]) {
-      syncedCount = parseInt(match[1], 10);
+    if (job.status === JobStatus.FAILED) {
+      return jsonError(job.lastError || "Failed to sync email", 500);
     }
 
-    return NextResponse.json({ ok: true, syncedCount, job });
+    const finalConnectionStatus = await getIntegrationConnection(user.workspaceId, IntegrationProvider.EMAIL_IMAP);
+    let syncedCount: number | null = null;
+
+    if (job.status === JobStatus.SUCCEEDED) {
+      const match = finalConnectionStatus?.lastSyncMessage?.match(/Synced (\d+)/);
+      syncedCount = match?.[1] ? parseInt(match[1], 10) : 0;
+    }
+
+    return NextResponse.json({
+      ok: true,
+      syncedCount,
+      job,
+      lastSyncMessage: finalConnectionStatus?.lastSyncMessage ?? null,
+    });
   } catch (error: any) {
     return jsonError(error?.message || "Failed to trigger email sync", 500);
   }

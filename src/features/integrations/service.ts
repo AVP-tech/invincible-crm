@@ -217,6 +217,23 @@ function asWhatsappConfig(value: unknown): Partial<WhatsappConfig> {
   };
 }
 
+function requireEmailConfig(value: unknown): EmailConfig {
+  const config = asEmailConfig(value);
+
+  if (!config.host || !config.port || typeof config.secure !== "boolean" || !config.username || !config.password) {
+    throw new Error("Email integration settings are incomplete. Save the mailbox connection again.");
+  }
+
+  return {
+    host: config.host,
+    port: config.port,
+    secure: config.secure,
+    username: config.username,
+    password: config.password,
+    mailbox: config.mailbox ?? "INBOX",
+  };
+}
+
 function formatErrorMessage(error: unknown, fallback: string) {
   return error instanceof Error && error.message ? error.message : fallback;
 }
@@ -392,22 +409,24 @@ export async function upsertEmailIntegration(workspaceId: string, input: EmailIn
 
   const resetSyncState = shouldResetEmailSyncState(previousConfig, config);
 
-  return db.integrationConnection.upsert({
-    where: {
-      workspaceId_provider_name: {
-        workspaceId,
-        provider: IntegrationProvider.EMAIL_IMAP,
-        name: input.name,
+  if (existing) {
+    return db.integrationConnection.update({
+      where: {
+        id: existing.id,
       },
-    },
-    update: {
-      status: IntegrationStatus.CONNECTED,
-      config: storedConfig,
-      syncState: resetSyncState ? Prisma.JsonNull : undefined,
-      lastSyncedAt: resetSyncState ? null : undefined,
-      lastSyncMessage: `Mailbox verified. Ready to sync ${formatMailboxLabel(config.mailbox)}.`,
-    },
-    create: {
+      data: {
+        name: input.name,
+        status: IntegrationStatus.CONNECTED,
+        config: storedConfig,
+        syncState: resetSyncState ? Prisma.JsonNull : undefined,
+        lastSyncedAt: resetSyncState ? null : undefined,
+        lastSyncMessage: `Mailbox verified. Ready to sync ${formatMailboxLabel(config.mailbox)}.`,
+      },
+    });
+  }
+
+  return db.integrationConnection.create({
+    data: {
       workspaceId,
       provider: IntegrationProvider.EMAIL_IMAP,
       name: input.name,
@@ -434,21 +453,23 @@ export async function upsertWhatsappIntegration(workspaceId: string, input: What
 
   const validation = await validateWhatsappAccessToken(config);
 
-  return db.integrationConnection.upsert({
-    where: {
-      workspaceId_provider_name: {
-        workspaceId,
-        provider: IntegrationProvider.WHATSAPP_META,
-        name: input.name,
+  if (existing) {
+    return db.integrationConnection.update({
+      where: {
+        id: existing.id,
       },
-    },
-    update: {
-      status: validation.status,
-      config: storedConfig,
-      lastSyncedAt: previousConfig.phoneNumberId !== config.phoneNumberId ? null : undefined,
-      lastSyncMessage: validation.message,
-    },
-    create: {
+      data: {
+        name: input.name,
+        status: validation.status,
+        config: storedConfig,
+        lastSyncedAt: previousConfig.phoneNumberId !== config.phoneNumberId ? null : undefined,
+        lastSyncMessage: validation.message,
+      },
+    });
+  }
+
+  return db.integrationConnection.create({
+    data: {
       workspaceId,
       provider: IntegrationProvider.WHATSAPP_META,
       name: input.name,
@@ -469,7 +490,7 @@ export async function getIntegrationConnection(workspaceId: string, provider: In
       workspace: true,
     },
     orderBy: {
-      createdAt: "asc",
+      updatedAt: "desc",
     },
   });
 }
@@ -529,7 +550,7 @@ export async function syncEmailConnection(connectionId: string) {
     throw new Error("Email integration not found");
   }
 
-  const config = connection.config as unknown as EmailConfig;
+  const config = requireEmailConfig(connection.config);
   const state = (connection.syncState as { lastUid?: number } | null) ?? {};
   const client = new ImapFlow({
     host: config.host,
@@ -636,7 +657,7 @@ export async function findWhatsappIntegrationByPhoneNumberId(phoneNumberId: stri
 
   return (
     connections.find((connection) => {
-      const config = connection.config as unknown as WhatsappConfig;
+      const config = asWhatsappConfig(connection.config);
       return config.phoneNumberId === phoneNumberId;
     }) ?? null
   );
@@ -651,7 +672,7 @@ export async function findWhatsappIntegrationByVerifyToken(verifyToken: string) 
 
   return (
     connections.find((connection) => {
-      const config = connection.config as unknown as WhatsappConfig;
+      const config = asWhatsappConfig(connection.config);
       return config.verifyToken === verifyToken;
     }) ?? null
   );

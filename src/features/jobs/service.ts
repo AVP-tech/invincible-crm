@@ -33,7 +33,7 @@ export async function enqueueBackgroundJob(
   });
 
   if (process.env.RUN_JOBS_INLINE !== "false") {
-    await processBackgroundJob(job.id);
+    return (await processBackgroundJob(job.id)) ?? job;
   }
 
   return job;

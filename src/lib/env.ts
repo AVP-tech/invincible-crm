@@ -5,6 +5,7 @@ export const env = {
   sessionSecret: process.env.SESSION_SECRET ?? devSessionSecret,
   demoUserEmail: process.env.DEMO_USER_EMAIL ?? "demo@invisiblecrm.local",
   demoUserPassword: process.env.DEMO_USER_PASSWORD ?? "demo12345",
+  whatsappAppSecret: process.env.WHATSAPP_APP_SECRET ?? "",
   openAiApiKey: process.env.OPENAI_API_KEY ?? "",
   openAiModel: process.env.OPENAI_MODEL ?? "gpt-4.1-mini"
 };

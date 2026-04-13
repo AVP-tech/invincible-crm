@@ -25,6 +25,7 @@ Required environment variables:
 
 - `DATABASE_URL` pointing to your hosted PostgreSQL database
 - `SESSION_SECRET`
+- `WHATSAPP_APP_SECRET` matching your Meta app secret if you enable WhatsApp webhooks
 - optional `OPENAI_API_KEY`
 - optional `RUN_JOBS_INLINE=false` if you want a separate worker process
 

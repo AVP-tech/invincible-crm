@@ -5,7 +5,9 @@ import {
   markWhatsappIntegrationVerified,
 } from "@/features/integrations/service";
 import { enqueueBackgroundJob } from "@/features/jobs/service";
-import { JobType } from "@prisma/client";
+import { JobType, Prisma } from "@prisma/client";
+import { env } from "@/lib/env";
+import { verifyWhatsappWebhookSignature } from "@/features/integrations/meta-webhook";
 
 // Webhook Verification (Meta requires this when configuring the URL)
 export async function GET(request: Request) {
@@ -34,16 +36,39 @@ export async function GET(request: Request) {
 // Processing Webhooks (Meta pushes live message payloads here)
 export async function POST(request: Request) {
   try {
-    const payload = await request.json();
+    const rawBody = await request.text();
 
-    // Verify it's a WhatsApp API webhook payload by checking the object structure
+    if (env.whatsappAppSecret) {
+      const signature = request.headers.get("x-hub-signature-256");
+
+      if (!verifyWhatsappWebhookSignature(rawBody, signature, env.whatsappAppSecret)) {
+        return new NextResponse("Invalid signature", { status: 401 });
+      }
+    } else if (process.env.NODE_ENV === "production") {
+      return new NextResponse("Webhook secret not configured", { status: 500 });
+    }
+
+    const payload = JSON.parse(rawBody) as {
+      object?: string;
+      entry?: Array<{
+        changes?: Array<{
+          value?: {
+            metadata?: {
+              phone_number_id?: string;
+            };
+            messages?: unknown[];
+          };
+        }>;
+      }>;
+    };
+
     if (!payload.object || payload.object !== 'whatsapp_business_account') {
       return new NextResponse("Invalid Payload Object", { status: 404 });
     }
 
     let processedAny = false;
+    const queuedConnectionIds = new Set<string>();
 
-    // Fast-track: find the phone number ID so we can assign the payload to the correct workspace
     for (const entry of payload.entry || []) {
       for (const change of entry.changes || []) {
         if (change?.value?.messages) {
@@ -52,14 +77,14 @@ export async function POST(request: Request) {
           if (phoneNumberId) {
             const connection = await findWhatsappIntegrationByPhoneNumberId(phoneNumberId);
             
-            if (connection) {
-               // Enqueue the incoming webhook payload safely into our Background Job queue
+            if (connection && !queuedConnectionIds.has(connection.id)) {
                await enqueueBackgroundJob(
                  connection.workspaceId, 
                  JobType.PROCESS_WHATSAPP, 
-                 payload, 
+                 payload as Prisma.InputJsonValue,
                  connection.id
                );
+               queuedConnectionIds.add(connection.id);
                processedAny = true;
             }
           }
@@ -68,16 +93,12 @@ export async function POST(request: Request) {
     }
 
     if (processedAny) {
-      // Meta just expects a 200 response to acknowledge receipt. 
-      // Background worker handles actual ingestion asynchronously.
       return new NextResponse("EVENT_RECEIVED", { status: 200 });
     } else {
-       // Acknowledge anyway so Meta doesn't retry indefinitely for an unlinked number.
        return new NextResponse("NO_MATCHING_CONNECTION", { status: 200 });
     }
 
   } catch (err) {
-    // Return 500 so Meta automatically retries if our server is failing
     return new NextResponse("Webhook Processing Failed", { status: 500 });
   }
 }

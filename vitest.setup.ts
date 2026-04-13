@@ -4,11 +4,11 @@ import { beforeAll } from "vitest";
 import { DatabaseSync } from "node:sqlite";
 
 const databasePath = path.resolve(process.cwd(), "prisma", "test.db");
-const migrationsRoot = path.resolve(process.cwd(), "prisma", "migrations");
+const schemaSourcePath = path.resolve(process.cwd(), "prisma", "dev.db");
 
 beforeAll(() => {
-  if (!fs.existsSync(migrationsRoot)) {
-    return;
+  if (!fs.existsSync(schemaSourcePath)) {
+    throw new Error(`Could not find the SQLite schema source at ${schemaSourcePath}`);
   }
 
   if (fs.existsSync(databasePath)) {
@@ -17,20 +17,24 @@ beforeAll(() => {
 
   fs.mkdirSync(path.dirname(databasePath), { recursive: true });
 
-  const database = new DatabaseSync(databasePath);
-  database.exec("PRAGMA foreign_keys = ON;");
+  const sourceDatabase = new DatabaseSync(schemaSourcePath);
+  const testDatabase = new DatabaseSync(databasePath);
+  const schemaStatements = sourceDatabase
+    .prepare(
+      `SELECT sql
+       FROM sqlite_master
+       WHERE sql IS NOT NULL
+         AND name NOT LIKE 'sqlite_%'
+       ORDER BY CASE type WHEN 'table' THEN 1 WHEN 'index' THEN 2 WHEN 'trigger' THEN 3 ELSE 4 END, name`,
+    )
+    .all() as Array<{ sql: string }>;
 
-  const migrationDirectories = fs
-    .readdirSync(migrationsRoot, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory())
-    .map((entry) => entry.name)
-    .sort();
+  testDatabase.exec("PRAGMA foreign_keys = ON;");
 
-  for (const migrationName of migrationDirectories) {
-    const migrationPath = path.join(migrationsRoot, migrationName, "migration.sql");
-    const migration = fs.readFileSync(migrationPath, "utf8");
-    database.exec(migration);
+  for (const statement of schemaStatements) {
+    testDatabase.exec(statement.sql);
   }
 
-  database.close();
+  testDatabase.close();
+  sourceDatabase.close();
 });

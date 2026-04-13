@@ -344,7 +344,10 @@ async function findMatches(userId: string, preview: CapturePreview) {
 }
 
 async function parseWithGemini(input: string, baseDate = new Date()) {
-  if (!env.googleAiApiKey) return null;
+  if (!env.googleAiApiKey) {
+    console.log("DEBUG: Gemini API Key missing in env object, skipping Gemini.");
+    return null;
+  }
 
   try {
     const { object } = await generateObject({
@@ -356,13 +359,20 @@ async function parseWithGemini(input: string, baseDate = new Date()) {
 
     return object;
   } catch (error) {
-    console.error("Gemini parse failed:", error);
+    console.error("DEBUG: Gemini parse failed completely. Error details:", error);
+    if (error instanceof Error) {
+      console.error("Error Message:", error.message);
+      console.error("Error Stack:", error.stack);
+    }
     return null;
   }
 }
 
 async function parseWithOpenAi(input: string, baseDate = new Date()) {
-  if (!env.openAiApiKey) return null;
+  if (!env.openAiApiKey) {
+    console.log("DEBUG: OpenAI API Key missing, skipping OpenAI.");
+    return null;
+  }
 
   const client = new OpenAI({ apiKey: env.openAiApiKey });
 
@@ -377,11 +387,17 @@ async function parseWithOpenAi(input: string, baseDate = new Date()) {
     });
 
     const raw = completion.choices[0]?.message?.content;
-    if (!raw) return null;
+    if (!raw) {
+      console.error("DEBUG: OpenAI returned empty content.");
+      return null;
+    }
     const parsed = capturePreviewSchema.safeParse(JSON.parse(raw));
+    if (!parsed.success) {
+      console.error("DEBUG: OpenAI JSON validation failed:", parsed.error);
+    }
     return parsed.success ? parsed.data : null;
   } catch (error) {
-    console.error("OpenAI parse failed:", error);
+    console.error("DEBUG: OpenAI parse failed. Error details:", error);
     return null;
   }
 }

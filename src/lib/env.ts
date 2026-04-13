@@ -9,5 +9,5 @@ export const env = {
   openAiApiKey: process.env.OPENAI_API_KEY ?? "",
   openAiModel: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
   googleAiApiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY ?? "",
-  googleModel: process.env.GOOGLE_MODEL ?? "gemini-1.5-flash-latest"
+  googleModel: process.env.GOOGLE_MODEL ?? "gemini-1.5-flash"
 };

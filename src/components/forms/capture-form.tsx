@@ -59,9 +59,6 @@ function CometBorder({
         repeat: Infinity,
         ease: "linear",
       });
-    } else {
-      // Let the current value settle; the opacity fade takes care of the exit
-      controls?.stop();
     }
 
     return () => controls?.stop();

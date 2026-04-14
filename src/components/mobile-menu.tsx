@@ -35,9 +35,11 @@ export function MobileMenu() {
               className="fixed inset-y-0 left-0 z-50 w-[280px] flex flex-col bg-white shadow-2xl dark:bg-[#132032] p-5 overflow-y-auto"
             >
               <div className="flex items-center justify-between">
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-moss">Invisible CRM</p>
-                <button 
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-moss">Invincible CRM</p>
+                <button
+                  type="button"
                   onClick={() => setIsOpen(false)}
+                  suppressHydrationWarning
                   className="rounded-full p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-white/10 dark:text-slate-400"
                 >
                   <X className="h-5 w-5" />

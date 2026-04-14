@@ -61,6 +61,7 @@ export function FloatingActionButton() {
       <motion.button
         type="button"
         onClick={() => setOpen((o) => !o)}
+        suppressHydrationWarning
         whileTap={{ scale: 0.93 }}
         whileHover={{ scale: 1.07 }}
         transition={{ type: "spring", stiffness: 400, damping: 22 }}

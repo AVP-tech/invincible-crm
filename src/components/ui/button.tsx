@@ -20,6 +20,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     <motion.button
       ref={ref}
       type={type}
+      suppressHydrationWarning
       whileTap={{ scale: 0.96 }}
       whileHover={{ scale: 1.03 }}
       transition={{ type: "spring", stiffness: 400, damping: 25 }}

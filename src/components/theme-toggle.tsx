@@ -36,6 +36,7 @@ export function ThemeToggle() {
     return (
       <button
         type="button"
+        suppressHydrationWarning
         className="flex h-10 w-10 items-center justify-center rounded-2xl border border-black/10 bg-white/80 text-slate-500 transition dark:border-white/10 dark:bg-white/5 dark:text-slate-400"
         aria-label="Toggle theme"
       >
@@ -48,6 +49,7 @@ export function ThemeToggle() {
     <button
       type="button"
       onClick={toggle}
+      suppressHydrationWarning
       className="group relative flex h-10 w-10 items-center justify-center rounded-2xl border border-black/10 bg-white/80 text-slate-600 shadow-sm transition-all duration-300 hover:scale-105 hover:shadow-md active:scale-95 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10"
       aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
     >

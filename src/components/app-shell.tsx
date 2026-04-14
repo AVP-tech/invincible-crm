@@ -69,7 +69,7 @@ export function AppShell({ user, children }: AppShellProps) {
               <div>
                 <div className="flex items-center gap-2">
                   <Crown className="h-3.5 w-3.5 text-gold/60" />
-                  <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gold/80">Invincible workspace</p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gold/80">Invincible CRM</p>
                 </div>
                 <h2 className="mt-1 text-xl font-semibold text-ink">Stay on top of relationships without the noise</h2>
               </div>
@@ -81,6 +81,7 @@ export function AppShell({ user, children }: AppShellProps) {
                 <input
                   name="q"
                   placeholder="Search contacts, deals, tasks..."
+                  suppressHydrationWarning
                   className="w-60 bg-transparent text-sm text-ink outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500"
                 />
               </form>

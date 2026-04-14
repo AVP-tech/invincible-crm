@@ -2,6 +2,7 @@ import { ActivityType, ConversationSource } from "@prisma/client";
 import OpenAI from "openai";
 import { db } from "@/lib/db";
 import { env } from "@/lib/env";
+import { logger } from "@/lib/logger";
 import { logActivity } from "@/lib/activity";
 import { inboxPreviewSchema, type InboxPreview } from "@/lib/schemas";
 import { parseCapturePreview } from "@/features/capture/parser";
@@ -180,7 +181,10 @@ export async function parseInboxPreview(userId: string, input: InboxInput, baseD
       return aiPreview;
     }
   } catch (error) {
-    console.error("Inbox capture AI parse failed, falling back", error);
+    logger.warn("Inbox capture AI parse failed. Falling back to deterministic parsing.", {
+      feature: "inbox_capture",
+      error: error instanceof Error ? error.message : "Unknown error"
+    });
   }
 
   const preview = await parseCapturePreview(userId, normalizeConversationBody(input.content), baseDate);

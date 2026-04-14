@@ -11,7 +11,10 @@ const config: Config = {
         moss: "rgb(var(--color-moss) / <alpha-value>)",
         ember: "rgb(var(--color-ember) / <alpha-value>)",
         mist: "rgb(var(--color-mist) / <alpha-value>)",
-        gold: "rgb(var(--color-gold) / <alpha-value>)"
+        gold: "rgb(var(--color-gold) / <alpha-value>)",
+        success: "rgb(var(--color-success) / <alpha-value>)",
+        warning: "rgb(var(--color-warning) / <alpha-value>)",
+        error: "rgb(var(--color-error) / <alpha-value>)"
       },
       boxShadow: {
         soft: "0 20px 45px rgba(19, 32, 50, 0.08)",

@@ -15,8 +15,16 @@ const serif = Fraunces({
 });
 
 export const metadata: Metadata = {
-  title: "Invincible CRM",
-  description: "AI-first CRM that never drops the ball"
+  title: {
+    default: "Invincible CRM",
+    template: "%s | Invincible CRM"
+  },
+  description: "Invincible CRM turns plain-language updates into structured contacts, deals, tasks, and notes before anything is saved.",
+  applicationName: "Invincible CRM",
+  openGraph: {
+    title: "Invincible CRM",
+    description: "Invincible CRM turns plain-language updates into structured contacts, deals, tasks, and notes before anything is saved."
+  }
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

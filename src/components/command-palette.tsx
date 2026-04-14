@@ -61,8 +61,8 @@ export function CommandPalette() {
           const data = await res.json();
           setResults(data);
         }
-      } catch (err) {
-        console.error("Search failed", err);
+      } catch {
+        setResults({ contacts: [], deals: [], tasks: [] });
       } finally {
         setLoading(false);
       }

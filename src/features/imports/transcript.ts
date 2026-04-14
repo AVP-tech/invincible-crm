@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import { type CapturePreview, transcriptPreviewSchema, type TranscriptPreview } from "@/lib/schemas";
 import { env } from "@/lib/env";
+import { logger } from "@/lib/logger";
 import { parseCapturePreview } from "@/features/capture/parser";
 
 const transcriptSystemPrompt = `
@@ -140,7 +141,10 @@ export async function parseTranscriptPreview(userId: string, transcript: string,
       return aiPreview;
     }
   } catch (error) {
-    console.error("Transcript import AI parse failed, falling back", error);
+    logger.warn("Transcript import AI parse failed. Falling back to deterministic parsing.", {
+      feature: "transcript_import",
+      error: error instanceof Error ? error.message : "Unknown error"
+    });
   }
 
   const preview = await parseCapturePreview(userId, transcript, baseDate);

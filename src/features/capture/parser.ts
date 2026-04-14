@@ -5,6 +5,7 @@ import OpenAI from "openai";
 import { db } from "@/lib/db";
 import { resolveRelativeDate } from "@/lib/date-parser";
 import { env } from "@/lib/env";
+import { logger } from "@/lib/logger";
 import { capturePreviewSchema, type CapturePreview } from "@/lib/schemas";
 import { isNonEmptyString, titleCase } from "@/lib/utils";
 
@@ -184,6 +185,13 @@ function uniqueItems(items: string[]) {
   return Array.from(new Set(items.filter(Boolean)));
 }
 
+export type CaptureParseResult = {
+  preview: CapturePreview;
+  status: "ready" | "fallback";
+  fallbackReason?: "ai_unavailable";
+  provider?: "Gemini" | "OpenAI";
+};
+
 function mergeCapturePreview(preferred: CapturePreview, fallback: CapturePreview): CapturePreview {
   const mergedContact = preferred.contact || fallback.contact
     ? {
@@ -345,8 +353,9 @@ async function findMatches(userId: string, preview: CapturePreview) {
 
 async function parseWithGemini(input: string, baseDate = new Date()) {
   if (!env.googleAiApiKey) {
-    console.log("DEBUG: Gemini API Key missing in env object, skipping Gemini.");
-    return null;
+    return {
+      preview: null
+    };
   }
 
   try {
@@ -357,21 +366,28 @@ async function parseWithGemini(input: string, baseDate = new Date()) {
       system: systemPrompt,
     });
 
-    return object;
+    return {
+      preview: object
+    };
   } catch (error) {
-    console.error("DEBUG: Gemini parse failed completely. Error details:", error);
-    if (error instanceof Error) {
-      console.error("Error Message:", error.message);
-      console.error("Error Stack:", error.stack);
-    }
-    return null;
+    logger.warn("Gemini capture parse failed. Falling back to the next parser.", {
+      feature: "quick_capture",
+      provider: "gemini",
+      model: env.googleModel,
+      inputLength: input.length,
+      error: error instanceof Error ? error.message : "Unknown error"
+    });
+    return {
+      preview: null
+    };
   }
 }
 
 async function parseWithOpenAi(input: string, baseDate = new Date()) {
   if (!env.openAiApiKey) {
-    console.log("DEBUG: OpenAI API Key missing, skipping OpenAI.");
-    return null;
+    return {
+      preview: null
+    };
   }
 
   const client = new OpenAI({ apiKey: env.openAiApiKey });
@@ -388,38 +404,81 @@ async function parseWithOpenAi(input: string, baseDate = new Date()) {
 
     const raw = completion.choices[0]?.message?.content;
     if (!raw) {
-      console.error("DEBUG: OpenAI returned empty content.");
-      return null;
+      logger.warn("OpenAI capture parse returned empty content.", {
+        feature: "quick_capture",
+        provider: "openai",
+        model: env.openAiModel,
+        inputLength: input.length
+      });
+      return {
+        preview: null
+      };
     }
     const parsed = capturePreviewSchema.safeParse(JSON.parse(raw));
     if (!parsed.success) {
-      console.error("DEBUG: OpenAI JSON validation failed:", parsed.error);
+      logger.warn("OpenAI capture parse returned invalid JSON for the schema.", {
+        feature: "quick_capture",
+        provider: "openai",
+        model: env.openAiModel,
+        inputLength: input.length
+      });
+      return {
+        preview: null
+      };
     }
-    return parsed.success ? parsed.data : null;
+    return {
+      preview: parsed.data
+    };
   } catch (error) {
-    console.error("DEBUG: OpenAI parse failed. Error details:", error);
-    return null;
+    logger.warn("OpenAI capture parse failed. Falling back to pattern matching.", {
+      feature: "quick_capture",
+      provider: "openai",
+      model: env.openAiModel,
+      inputLength: input.length,
+      error: error instanceof Error ? error.message : "Unknown error"
+    });
+    return {
+      preview: null
+    };
   }
 }
 
-export async function parseCapturePreview(userId: string, input: string, baseDate = new Date()) {
+export async function parseCaptureResult(userId: string, input: string, baseDate = new Date()): Promise<CaptureParseResult> {
   const fallbackPreview = fallbackParseCapture(input, baseDate);
 
   try {
-    // Try Gemini First as requested
-    let aiPreview = await parseWithGemini(input, baseDate);
-    
-    // Fallback to OpenAI if Gemini fails or is not configured
+    const geminiResult = await parseWithGemini(input, baseDate);
+    let aiPreview = geminiResult.preview;
+    let provider: "Gemini" | "OpenAI" | undefined = aiPreview ? "Gemini" : undefined;
+
     if (!aiPreview) {
-      aiPreview = await parseWithOpenAi(input, baseDate);
+      const openAiResult = await parseWithOpenAi(input, baseDate);
+      aiPreview = openAiResult.preview;
+      provider = aiPreview ? "OpenAI" : undefined;
     }
 
     if (aiPreview) {
-      return findMatches(userId, mergeCapturePreview(aiPreview, fallbackPreview));
+      return {
+        preview: await findMatches(userId, mergeCapturePreview(aiPreview, fallbackPreview)),
+        status: "ready",
+        provider
+      };
     }
   } catch (error) {
-    console.error("AI capture parse failed, falling back", error);
+    logger.error("Capture parsing failed unexpectedly. Falling back to pattern matching.", error, {
+      feature: "quick_capture",
+      inputLength: input.length
+    });
   }
 
-  return findMatches(userId, fallbackPreview);
+  return {
+    preview: await findMatches(userId, fallbackPreview),
+    status: "fallback",
+    fallbackReason: "ai_unavailable"
+  };
+}
+
+export async function parseCapturePreview(userId: string, input: string, baseDate = new Date()) {
+  const result = await parseCaptureResult(userId, input, baseDate);
+  return result.preview;
 }

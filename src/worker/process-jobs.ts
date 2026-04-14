@@ -1,15 +1,15 @@
+import { logger } from "@/lib/logger";
 import { processDueJobs } from "@/features/jobs/service";
 
 async function main() {
   const processed = await processDueJobs();
-  console.log(`Processed ${processed} background job(s)`);
+  logger.info("Processed background jobs.", {
+    processed
+  });
 }
 
 main()
   .catch((error) => {
-    console.error(error);
-    process.exit(1);
-  })
-  .finally(() => {
-    process.exit(0);
+    logger.error("Background job worker failed.", error);
+    process.exitCode = 1;
   });

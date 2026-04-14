@@ -16,6 +16,9 @@ export async function POST(request: Request) {
     }
 
     const { name, ...json } = (await readJson(request)) as Record<string, any>;
+    if (typeof json.secure === "string") {
+      json.secure = json.secure === "true";
+    }
     const parsed = emailIntegrationInputSchema
       .partial({ password: true })
       .safeParse({

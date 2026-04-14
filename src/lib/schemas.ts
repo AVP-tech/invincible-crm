@@ -134,7 +134,7 @@ export const emailIntegrationInputSchema = z.object({
     .union([z.string(), z.number()])
     .transform((value) => Number(value))
     .refine((value) => Number.isInteger(value) && value > 0, "Enter a valid IMAP port"),
-  secure: z.boolean().default(true),
+  secure: z.coerce.boolean().default(true),
   username: z.string().trim().min(2, "Username is required"),
   password: z.string().trim().min(2, "Password is required"),
   mailbox: z.string().trim().default("INBOX")

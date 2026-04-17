@@ -17,11 +17,14 @@ export async function GET(request: Request) {
   const token = searchParams.get('hub.verify_token');
   const challenge = searchParams.get('hub.challenge');
 
-  if (mode === 'subscribe' && token) {
+  if (mode === 'subscribe' && token && challenge) {
     // First: check env variable directly (for initial setup)
     const envVerifyToken = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN;
     if (envVerifyToken && token === envVerifyToken) {
-      return new NextResponse(challenge, { status: 200 });
+      return new Response(challenge, {
+        status: 200,
+        headers: { 'Content-Type': 'text/plain' },
+      });
     }
 
     // Second: check database for per-connection verify tokens
@@ -29,13 +32,16 @@ export async function GET(request: Request) {
     
     if (connection) {
       await markWhatsappIntegrationVerified(connection.id);
-      return new NextResponse(challenge, { status: 200 });
-    } else {
-      return new NextResponse("Forbidden", { status: 403 });
+      return new Response(challenge, {
+        status: 200,
+        headers: { 'Content-Type': 'text/plain' },
+      });
     }
+
+    return new Response('Forbidden', { status: 403 });
   }
 
-  return new NextResponse("Bad Request", { status: 400 });
+  return new Response('Bad Request', { status: 400 });
 }
 
 // Processing Webhooks (Meta pushes live message payloads here)
@@ -49,9 +55,6 @@ export async function POST(request: Request) {
       if (!verifyWhatsappWebhookSignature(rawBody, signature, env.whatsappAppSecret)) {
         return new NextResponse("Invalid signature", { status: 401 });
       }
-    } else if (process.env.NODE_ENV === "production") {
-      // Allow without signature in production if no app secret is set
-      // (remove this once WHATSAPP_APP_SECRET is configured)
     }
 
     const payload = JSON.parse(rawBody) as {

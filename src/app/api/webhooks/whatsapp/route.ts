@@ -1,36 +1,39 @@
 import { NextResponse } from "next/server";
 import {
-  findWhatsappIntegrationByVerifyToken,
   findWhatsappIntegrationByPhoneNumberId,
-  markWhatsappIntegrationVerified,
 } from "@/features/integrations/service";
 import { enqueueBackgroundJob } from "@/features/jobs/service";
 import { JobType, Prisma } from "@prisma/client";
 import { env } from "@/lib/env";
 import { verifyWhatsappWebhookSignature } from "@/features/integrations/meta-webhook";
 
+function plainTextResponse(body: string, status: number) {
+  return new NextResponse(body, {
+    status,
+    headers: {
+      "Content-Type": "text/plain; charset=utf-8"
+    }
+  });
+}
+
 // Webhook Verification (Meta requires this when configuring the URL)
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  
-  const mode = searchParams.get('hub.mode');
-  const token = searchParams.get('hub.verify_token');
-  const challenge = searchParams.get('hub.challenge');
 
-  if (mode === 'subscribe' && token) {
-    // Verify against our database connections
-    const connection = await findWhatsappIntegrationByVerifyToken(token);
-    
-    if (connection) {
-      await markWhatsappIntegrationVerified(connection.id);
-      // The token matches! Meta expects ONLY the challenge string to be returned as plain text.
-      return new NextResponse(challenge, { status: 200 });
-    } else {
-      return new NextResponse("Forbidden", { status: 403 });
-    }
+  const mode = searchParams.get("hub.mode");
+  const token = searchParams.get("hub.verify_token");
+  const challenge = searchParams.get("hub.challenge");
+
+  if (mode !== "subscribe" || !challenge) {
+    return plainTextResponse("Bad Request", 400);
   }
 
-  return new NextResponse("Bad Request", { status: 400 });
+  if (!env.whatsappWebhookVerifyToken || token !== env.whatsappWebhookVerifyToken) {
+    return plainTextResponse("Forbidden", 403);
+  }
+
+  // Meta expects ONLY the challenge string as plain text for webhook verification.
+  return plainTextResponse(challenge, 200);
 }
 
 // Processing Webhooks (Meta pushes live message payloads here)

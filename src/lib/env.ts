@@ -2,6 +2,8 @@ import { logger } from "@/lib/logger";
 
 const devSessionSecret = "local-dev-session-secret-change-me";
 const openAiApiKey = process.env.OPENAI_API_KEY ?? "";
+const whatsappAppSecret = process.env.WHATSAPP_APP_SECRET ?? "";
+const whatsappWebhookVerifyToken = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN ?? "";
 
 declare global {
   var __invincibleEnvWarningsLogged: boolean | undefined;
@@ -36,7 +38,8 @@ export const env = {
   sessionSecret: process.env.SESSION_SECRET ?? devSessionSecret,
   demoUserEmail: process.env.DEMO_USER_EMAIL ?? "demo@invisiblecrm.local",
   demoUserPassword: process.env.DEMO_USER_PASSWORD ?? "demo12345",
-  whatsappAppSecret: process.env.WHATSAPP_APP_SECRET ?? "",
+  whatsappAppSecret,
+  whatsappWebhookVerifyToken,
   openAiApiKey,
   openAiModel: process.env.OPENAI_MODEL ?? "gpt-4o-mini"
 };

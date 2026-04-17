@@ -1,5 +1,4 @@
-import { DealStage, TaskPriority } from "@prisma/client";
-import { generateObject } from "ai";
+import { DealStage, TaskPriority, TaskRecurrencePattern, TaskStatus } from "@prisma/client";
 import OpenAI from "openai";
 import { db } from "@/lib/db";
 import { resolveRelativeDate } from "@/lib/date-parser";
@@ -51,6 +50,105 @@ Schema:
   "note": string | undefined
 }
 `.trim();
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isMissingModelValue(value: unknown) {
+  return value === undefined || value === null || value === "";
+}
+
+function truncateForLog(value: string, maxLength = 1200) {
+  return value.length > maxLength ? `${value.slice(0, maxLength)}...` : value;
+}
+
+function convertNullsToUndefined(value: unknown): unknown {
+  if (value === null) {
+    return undefined;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => convertNullsToUndefined(item));
+  }
+
+  if (isPlainObject(value)) {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, nestedValue]) => [key, convertNullsToUndefined(nestedValue)])
+    );
+  }
+
+  return value;
+}
+
+function normalizeOpenAiCapturePayload(value: unknown) {
+  if (!isPlainObject(value)) {
+    return convertNullsToUndefined(value);
+  }
+
+  const normalized = convertNullsToUndefined(value);
+
+  if (!isPlainObject(normalized)) {
+    return normalized;
+  }
+
+  if (isMissingModelValue(normalized.parserMode)) {
+    normalized.parserMode = "AI";
+  }
+
+  if (normalized.missingFields == null) {
+    normalized.missingFields = [];
+  }
+
+  if (normalized.suggestedUpdates == null) {
+    normalized.suggestedUpdates = [];
+  }
+
+  if (isPlainObject(normalized.contact) && normalized.contact.tags == null) {
+    normalized.contact = {
+      ...normalized.contact,
+      tags: []
+    };
+  }
+
+  if (isPlainObject(normalized.deal) && isMissingModelValue(normalized.deal.currency)) {
+    normalized.deal = {
+      ...normalized.deal,
+      currency: "INR"
+    };
+  }
+
+  if (isPlainObject(normalized.task)) {
+    normalized.task = {
+      ...normalized.task,
+      ...(isMissingModelValue(normalized.task.priority) ? { priority: TaskPriority.MEDIUM } : {}),
+      ...(isMissingModelValue(normalized.task.status) ? { status: TaskStatus.OPEN } : {}),
+      ...(isMissingModelValue(normalized.task.recurrencePattern)
+        ? { recurrencePattern: TaskRecurrencePattern.NONE }
+        : {})
+    };
+  }
+
+  return normalized;
+}
+
+function formatCaptureSchemaIssues(value: unknown) {
+  const parsed = capturePreviewSchema.safeParse(value);
+
+  if (parsed.success) {
+    return parsed;
+  }
+
+  return {
+    success: false as const,
+    error: parsed.error,
+    issues: parsed.error.issues.map((issue) => ({
+      code: issue.code,
+      path: issue.path.length ? issue.path.join(".") : "(root)",
+      message: issue.message
+    }))
+  };
+}
 
 function extractAmount(input: string) {
   const normalized = input.toLowerCase();
@@ -377,14 +475,18 @@ async function parseWithOpenAi(input: string, baseDate = new Date()) {
       });
       return { preview: null };
     }
-
-    const parsed = capturePreviewSchema.safeParse(JSON.parse(raw));
+    const payload = normalizeOpenAiCapturePayload(JSON.parse(raw));
+    const parsed = formatCaptureSchemaIssues(payload);
     if (!parsed.success) {
       logger.warn("OpenAI capture parse returned invalid JSON for the schema.", {
         feature: "quick_capture",
         provider: "openai",
         model: env.openAiModel,
-        inputLength: input.length
+        inputLength: input.length,
+        responseKeys: isPlainObject(payload) ? Object.keys(payload) : [],
+        responseParserMode: isPlainObject(payload) ? payload.parserMode : undefined,
+        rawPreview: truncateForLog(raw),
+        schemaIssues: parsed.issues
       });
       return { preview: null };
     }

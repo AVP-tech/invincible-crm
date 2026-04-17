@@ -18,12 +18,17 @@ export async function GET(request: Request) {
   const challenge = searchParams.get('hub.challenge');
 
   if (mode === 'subscribe' && token) {
-    // Verify against our database connections
+    // First: check env variable directly (for initial setup)
+    const envVerifyToken = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN;
+    if (envVerifyToken && token === envVerifyToken) {
+      return new NextResponse(challenge, { status: 200 });
+    }
+
+    // Second: check database for per-connection verify tokens
     const connection = await findWhatsappIntegrationByVerifyToken(token);
     
     if (connection) {
       await markWhatsappIntegrationVerified(connection.id);
-      // The token matches! Meta expects ONLY the challenge string to be returned as plain text.
       return new NextResponse(challenge, { status: 200 });
     } else {
       return new NextResponse("Forbidden", { status: 403 });
@@ -45,7 +50,8 @@ export async function POST(request: Request) {
         return new NextResponse("Invalid signature", { status: 401 });
       }
     } else if (process.env.NODE_ENV === "production") {
-      return new NextResponse("Webhook secret not configured", { status: 500 });
+      // Allow without signature in production if no app secret is set
+      // (remove this once WHATSAPP_APP_SECRET is configured)
     }
 
     const payload = JSON.parse(rawBody) as {

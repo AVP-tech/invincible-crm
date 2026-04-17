@@ -5,7 +5,7 @@ import {
 import { enqueueBackgroundJob } from "@/features/jobs/service";
 import { JobType, Prisma } from "@prisma/client";
 import { env } from "@/lib/env";
-import { verifyWhatsappWebhookSignature } from "@/features/integrations/meta-webhook";
+import { logger } from "@/lib/logger";
 
 function plainTextResponse(body: string, status: number) {
   return new NextResponse(body, {
@@ -24,11 +24,7 @@ export async function GET(request: Request) {
   const token = searchParams.get("hub.verify_token");
   const challenge = searchParams.get("hub.challenge");
 
-  if (mode !== "subscribe" || !challenge) {
-    return plainTextResponse("Bad Request", 400);
-  }
-
-  if (!env.whatsappWebhookVerifyToken || token !== env.whatsappWebhookVerifyToken) {
+  if (mode !== "subscribe" || !challenge || token !== env.whatsappWebhookVerifyToken) {
     return plainTextResponse("Forbidden", 403);
   }
 
@@ -38,19 +34,12 @@ export async function GET(request: Request) {
 
 // Processing Webhooks (Meta pushes live message payloads here)
 export async function POST(request: Request) {
+  const rawBody = await request.text();
+  logger.info("WhatsApp webhook received.", {
+    body: rawBody
+  });
+
   try {
-    const rawBody = await request.text();
-
-    if (env.whatsappAppSecret) {
-      const signature = request.headers.get("x-hub-signature-256");
-
-      if (!verifyWhatsappWebhookSignature(rawBody, signature, env.whatsappAppSecret)) {
-        return new NextResponse("Invalid signature", { status: 401 });
-      }
-    } else if (process.env.NODE_ENV === "production") {
-      return new NextResponse("Webhook secret not configured", { status: 500 });
-    }
-
     const payload = JSON.parse(rawBody) as {
       object?: string;
       entry?: Array<{
@@ -59,49 +48,74 @@ export async function POST(request: Request) {
             metadata?: {
               phone_number_id?: string;
             };
-            messages?: unknown[];
+            contacts?: Array<{
+              wa_id?: string;
+            }>;
+            messages?: Array<{
+              type?: string;
+              from?: string;
+              text?: {
+                body?: string;
+              };
+            }>;
           };
         }>;
       }>;
     };
 
-    if (!payload.object || payload.object !== 'whatsapp_business_account') {
-      return new NextResponse("Invalid Payload Object", { status: 404 });
-    }
-
-    let processedAny = false;
-    const queuedConnectionIds = new Set<string>();
-
     for (const entry of payload.entry || []) {
       for (const change of entry.changes || []) {
-        if (change?.value?.messages) {
-          const phoneNumberId = change.value.metadata?.phone_number_id;
+        const phoneNumberId = change.value?.metadata?.phone_number_id;
 
-          if (phoneNumberId) {
-            const connection = await findWhatsappIntegrationByPhoneNumberId(phoneNumberId);
-            
-            if (connection && !queuedConnectionIds.has(connection.id)) {
-               await enqueueBackgroundJob(
-                 connection.workspaceId, 
-                 JobType.PROCESS_WHATSAPP, 
-                 payload as Prisma.InputJsonValue,
-                 connection.id
-               );
-               queuedConnectionIds.add(connection.id);
-               processedAny = true;
-            }
-          }
+        for (const message of change.value?.messages || []) {
+          const senderPhone = message.from ?? change.value?.contacts?.[0]?.wa_id ?? "unknown";
+          const messageText = message.text?.body ?? "[non-text message]";
+
+          logger.info("WhatsApp message received.", {
+            phoneNumberId,
+            senderPhone,
+            messageText
+          });
         }
       }
     }
 
-    if (processedAny) {
-      return new NextResponse("EVENT_RECEIVED", { status: 200 });
-    } else {
-       return new NextResponse("NO_MATCHING_CONNECTION", { status: 200 });
-    }
+    // Best-effort downstream processing; do not fail the webhook if any DB/job work breaks.
+    try {
+      const queuedConnectionIds = new Set<string>();
 
-  } catch (err) {
-    return new NextResponse("Webhook Processing Failed", { status: 500 });
+      for (const entry of payload.entry || []) {
+        for (const change of entry.changes || []) {
+          const phoneNumberId = change.value?.metadata?.phone_number_id;
+
+          if (!phoneNumberId || !(change.value?.messages?.length)) {
+            continue;
+          }
+
+          const connection = await findWhatsappIntegrationByPhoneNumberId(phoneNumberId);
+
+          if (connection && !queuedConnectionIds.has(connection.id)) {
+            await enqueueBackgroundJob(
+              connection.workspaceId,
+              JobType.PROCESS_WHATSAPP,
+              payload as Prisma.InputJsonValue,
+              connection.id
+            );
+            queuedConnectionIds.add(connection.id);
+          }
+        }
+      }
+    } catch (error) {
+      logger.warn("WhatsApp webhook downstream processing failed, but the webhook was acknowledged.", {
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  } catch (error) {
+    logger.warn("WhatsApp webhook received an invalid JSON payload, but the webhook was acknowledged.", {
+      error: error instanceof Error ? error.message : "Unknown error",
+      body: rawBody
+    });
   }
+
+  return plainTextResponse("EVENT_RECEIVED", 200);
 }

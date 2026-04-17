@@ -3,7 +3,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   findWhatsappIntegrationByPhoneNumberId: vi.fn(),
   enqueueBackgroundJob: vi.fn(),
-  verifyWhatsappWebhookSignature: vi.fn()
+  info: vi.fn(),
+  warn: vi.fn()
 }));
 
 vi.mock("@/features/integrations/service", () => ({
@@ -14,18 +15,20 @@ vi.mock("@/features/jobs/service", () => ({
   enqueueBackgroundJob: mocks.enqueueBackgroundJob
 }));
 
-vi.mock("@/features/integrations/meta-webhook", () => ({
-  verifyWhatsappWebhookSignature: mocks.verifyWhatsappWebhookSignature
+vi.mock("@/lib/logger", () => ({
+  logger: {
+    info: mocks.info,
+    warn: mocks.warn
+  }
 }));
 
 vi.mock("@/lib/env", () => ({
   env: {
-    whatsappAppSecret: "meta-app-secret",
     whatsappWebhookVerifyToken: "invincible_secret_123"
   }
 }));
 
-import { GET } from "@/app/api/webhooks/whatsapp/route";
+import { GET, POST } from "@/app/api/webhooks/whatsapp/route";
 
 describe("WhatsApp webhook verification route", () => {
   beforeEach(() => {
@@ -58,5 +61,66 @@ describe("WhatsApp webhook verification route", () => {
     expect(await response.text()).toBe("Forbidden");
     expect(mocks.findWhatsappIntegrationByPhoneNumberId).not.toHaveBeenCalled();
     expect(mocks.enqueueBackgroundJob).not.toHaveBeenCalled();
+  });
+
+  it("always acknowledges POST webhook payloads without requiring authorization", async () => {
+    mocks.findWhatsappIntegrationByPhoneNumberId.mockResolvedValue(null);
+
+    const response = await POST(
+      new Request("https://example.com/api/webhooks/whatsapp", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          object: "whatsapp_business_account",
+          entry: [
+            {
+              changes: [
+                {
+                  value: {
+                    metadata: {
+                      phone_number_id: "phone-number-id"
+                    },
+                    contacts: [{ wa_id: "919999999999" }],
+                    messages: [
+                      {
+                        from: "919999999999",
+                        text: {
+                          body: "Hello from WhatsApp"
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        })
+      })
+    );
+
+    expect(response.status).toBe(200);
+    expect(await response.text()).toBe("EVENT_RECEIVED");
+    expect(mocks.info).toHaveBeenCalledWith(
+      "WhatsApp message received.",
+      expect.objectContaining({
+        senderPhone: "919999999999",
+        messageText: "Hello from WhatsApp"
+      })
+    );
+  });
+
+  it("acknowledges invalid POST payloads instead of returning 401 or 500", async () => {
+    const response = await POST(
+      new Request("https://example.com/api/webhooks/whatsapp", {
+        method: "POST",
+        body: "not-json"
+      })
+    );
+
+    expect(response.status).toBe(200);
+    expect(await response.text()).toBe("EVENT_RECEIVED");
+    expect(mocks.warn).toHaveBeenCalled();
   });
 });

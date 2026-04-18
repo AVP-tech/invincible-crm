@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { CinematicIntro } from "@/components/cinematic-intro";
 import { TiltCard } from "@/components/tilt-card";
 import { ScrollReveal } from "@/components/scroll-reveal";
+import { PricingSection } from "@/components/marketing/pricing-section";
 
 type HomeUser = {
   name: string;
@@ -401,14 +402,7 @@ export function CinematicHome({ user }: { user: HomeUser }) {
                   ))}
                 </div>
 
-                {!user ? (
-                  <div className="mt-6 rounded-[1.6rem] border border-gold/10 bg-gold/[0.04] px-5 py-4 text-sm text-white/68">
-                    Demo login is prefilled for speed:{" "}
-                    <span className="font-semibold text-gold">
-                      demo@invisiblecrm.local / demo12345
-                    </span>
-                  </div>
-                ) : null}
+  
               </div>
             </motion.aside>
           </div>
@@ -426,6 +420,9 @@ export function CinematicHome({ user }: { user: HomeUser }) {
               </p>
             </div>
           </ScrollReveal>
+
+          {/* ── Pricing Section ── */}
+          <PricingSection />
 
           {/* ── Feature Grid ── */}
           <div className="grid gap-6 pb-20 md:grid-cols-3">

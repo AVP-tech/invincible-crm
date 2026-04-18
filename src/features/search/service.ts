@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 
-export async function globalSearch(userId: string, query: string) {
+export async function globalSearch(workspaceId: string, query: string) {
   const trimmed = query.trim();
 
   if (!trimmed) {
@@ -15,7 +15,7 @@ export async function globalSearch(userId: string, query: string) {
   const [contacts, deals, tasks, conversations] = await Promise.all([
     db.contact.findMany({
       where: {
-        userId,
+        workspaceId,
         OR: [{ name: { contains: trimmed } }, { email: { contains: trimmed } }, { phone: { contains: trimmed } }]
       },
       include: { company: true },
@@ -26,7 +26,7 @@ export async function globalSearch(userId: string, query: string) {
     }),
     db.deal.findMany({
       where: {
-        userId,
+        workspaceId,
         OR: [{ title: { contains: trimmed } }, { description: { contains: trimmed } }, { nextStep: { contains: trimmed } }]
       },
       include: { contact: true },
@@ -37,7 +37,7 @@ export async function globalSearch(userId: string, query: string) {
     }),
     db.task.findMany({
       where: {
-        userId,
+        workspaceId,
         OR: [{ title: { contains: trimmed } }, { description: { contains: trimmed } }]
       },
       include: { contact: true, deal: true },
@@ -48,7 +48,7 @@ export async function globalSearch(userId: string, query: string) {
     }),
     db.conversationLog.findMany({
       where: {
-        userId,
+        workspaceId,
         OR: [
           { subject: { contains: trimmed } },
           { participantLabel: { contains: trimmed } },

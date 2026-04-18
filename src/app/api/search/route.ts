@@ -20,7 +20,7 @@ export async function GET(request: Request) {
   const [contacts, deals, tasks] = await Promise.all([
     db.contact.findMany({
       where: {
-        userId: user.id,
+        workspaceId: user.workspaceId,
         OR: [
           { name: { contains: query } },
           { email: { contains: query } },
@@ -34,7 +34,7 @@ export async function GET(request: Request) {
     }),
     db.deal.findMany({
       where: {
-        userId: user.id,
+        workspaceId: user.workspaceId,
         title: { contains: query }
       },
       include: {
@@ -44,7 +44,7 @@ export async function GET(request: Request) {
     }),
     db.task.findMany({
       where: {
-        userId: user.id,
+        workspaceId: user.workspaceId,
         title: { contains: query }
       },
       take: 5

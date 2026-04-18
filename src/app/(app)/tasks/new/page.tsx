@@ -8,12 +8,12 @@ export default async function NewTaskPage() {
   const user = await requireUser();
   const [contacts, deals, members] = await Promise.all([
     db.contact.findMany({
-      where: { userId: user.id },
+      where: { workspaceId: user.workspaceId },
       select: { id: true, name: true },
       orderBy: { name: "asc" }
     }),
     db.deal.findMany({
-      where: { userId: user.id },
+      where: { workspaceId: user.workspaceId },
       select: { id: true, title: true },
       orderBy: { updatedAt: "desc" }
     }),

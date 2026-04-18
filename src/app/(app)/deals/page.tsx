@@ -8,7 +8,7 @@ import { DealsBoard } from "@/components/deals-board";
 
 export default async function DealsPage() {
   const user = await requireUser();
-  const deals = await listDeals(user.id);
+  const deals = await listDeals(user.workspaceId);
 
   return (
     <div className="space-y-6">

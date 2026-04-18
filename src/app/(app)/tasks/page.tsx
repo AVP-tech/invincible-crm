@@ -16,7 +16,7 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
   const user = await requireUser();
   const params = await searchParams;
   const filter = filterOptions.includes(params.filter as TaskFilter) ? (params.filter as TaskFilter) : "all";
-  const tasks = await listTasks(user.id, filter);
+  const tasks = await listTasks(user.workspaceId, filter);
 
   return (
     <div className="space-y-6">

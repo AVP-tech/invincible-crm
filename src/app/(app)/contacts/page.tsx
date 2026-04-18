@@ -11,7 +11,7 @@ import { Avatar } from "@/components/ui/avatar";
 
 export default async function ContactsPage() {
   const user = await requireUser();
-  const contacts = await listContacts(user.id);
+  const contacts = await listContacts(user.workspaceId);
 
   return (
     <div className="space-y-6">

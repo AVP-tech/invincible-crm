@@ -21,7 +21,7 @@ export async function POST(request: Request) {
     return jsonError(parsed.error.issues[0]?.message ?? "Invalid deal payload");
   }
 
-  const deal = await createDeal(user.id, parsed.data);
+  const deal = await createDeal(user.workspaceId, user.id, parsed.data);
 
   return NextResponse.json({ ok: true, deal });
 }

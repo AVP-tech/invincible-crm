@@ -393,14 +393,14 @@ export function fallbackParseCapture(input: string, baseDate = new Date()): Capt
   });
 }
 
-async function findMatches(userId: string, preview: CapturePreview) {
+async function findMatches(workspaceId: string, preview: CapturePreview) {
   let existingContactId = preview.existingContactId;
   let existingDealId = preview.existingDealId;
 
   if (!existingContactId && preview.contact?.email) {
     const existing = await db.contact.findFirst({
       where: {
-        userId,
+        workspaceId,
         email: preview.contact.email
       }
     });
@@ -413,7 +413,7 @@ async function findMatches(userId: string, preview: CapturePreview) {
   if (!existingContactId && preview.contact?.name) {
     const existing = await db.contact.findFirst({
       where: {
-        userId,
+        workspaceId,
         name: preview.contact.name
       }
     });
@@ -426,7 +426,7 @@ async function findMatches(userId: string, preview: CapturePreview) {
   if (!existingDealId && existingContactId && isNonEmptyString(preview.deal?.title)) {
     const existingDeal = await db.deal.findFirst({
       where: {
-        userId,
+        workspaceId,
         contactId: existingContactId,
         title: preview.deal.title
       }
@@ -504,7 +504,7 @@ async function parseWithOpenAi(input: string, baseDate = new Date()) {
   }
 }
 
-export async function parseCaptureResult(userId: string, input: string, baseDate = new Date()): Promise<CaptureParseResult> {
+export async function parseCaptureResult(workspaceId: string, input: string, baseDate = new Date()): Promise<CaptureParseResult> {
   const fallbackPreview = fallbackParseCapture(input, baseDate);
 
   try {
@@ -513,7 +513,7 @@ export async function parseCaptureResult(userId: string, input: string, baseDate
 
     if (aiPreview) {
       return {
-        preview: await findMatches(userId, mergeCapturePreview(aiPreview, fallbackPreview)),
+        preview: await findMatches(workspaceId, mergeCapturePreview(aiPreview, fallbackPreview)),
         status: "ready",
         provider: "OpenAI"
       };
@@ -526,13 +526,13 @@ export async function parseCaptureResult(userId: string, input: string, baseDate
   }
 
   return {
-    preview: await findMatches(userId, fallbackPreview),
+    preview: await findMatches(workspaceId, fallbackPreview),
     status: "fallback",
     fallbackReason: "ai_unavailable"
   };
 }
 
-export async function parseCapturePreview(userId: string, input: string, baseDate = new Date()) {
-  const result = await parseCaptureResult(userId, input, baseDate);
+export async function parseCapturePreview(workspaceId: string, input: string, baseDate = new Date()) {
+  const result = await parseCaptureResult(workspaceId, input, baseDate);
   return result.preview;
 }

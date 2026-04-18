@@ -19,7 +19,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await parseCaptureResult(user.id, parsed.data.input);
+    const result = await parseCaptureResult(user.workspaceId, parsed.data.input);
 
     return NextResponse.json({
       ok: true,

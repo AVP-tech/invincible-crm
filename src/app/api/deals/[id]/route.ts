@@ -22,7 +22,11 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   }
 
   const { id } = await params;
-  const deal = await updateDeal(user.id, id, parsed.data);
+  const deal = await updateDeal(user.workspaceId, user.id, id, parsed.data);
+
+  if (!deal) {
+    return jsonError("Deal not found", 404);
+  }
 
   return NextResponse.json({ ok: true, deal });
 }
@@ -39,7 +43,7 @@ export async function DELETE(_: Request, { params }: { params: Promise<{ id: str
   }
 
   const { id } = await params;
-  const deal = await deleteDeal(user.id, id);
+  const deal = await deleteDeal(user.workspaceId, user.id, id);
 
   if (!deal) {
     return jsonError("Deal not found", 404);

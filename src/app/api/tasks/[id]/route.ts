@@ -22,7 +22,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   }
 
   const { id } = await params;
-  const result = await updateTask(user.id, id, parsed.data);
+  const result = await updateTask(user.workspaceId, user.id, id, parsed.data);
 
   if (!result) {
     return jsonError("Task not found", 404);
@@ -43,7 +43,7 @@ export async function DELETE(_: Request, { params }: { params: Promise<{ id: str
   }
 
   const { id } = await params;
-  const task = await deleteTask(user.id, id);
+  const task = await deleteTask(user.workspaceId, user.id, id);
 
   if (!task) {
     return jsonError("Task not found", 404);

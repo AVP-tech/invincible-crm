@@ -11,7 +11,7 @@ import { PageHeader } from "@/components/ui/page-header";
 
 export default async function InboxPage() {
   const user = await requireUser();
-  const recentCaptures = await listRecentInboxCaptures(user.id);
+  const recentCaptures = await listRecentInboxCaptures(user.workspaceId);
 
   return (
     <div className="space-y-6">

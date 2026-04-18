@@ -133,7 +133,7 @@ async function parseWithOpenAi(transcript: string, baseDate = new Date()) {
   return parsed.success ? parsed.data : null;
 }
 
-export async function parseTranscriptPreview(userId: string, transcript: string, baseDate = new Date()): Promise<TranscriptPreview> {
+export async function parseTranscriptPreview(workspaceId: string, transcript: string, baseDate = new Date()): Promise<TranscriptPreview> {
   try {
     const aiPreview = await parseWithOpenAi(transcript, baseDate);
 
@@ -147,7 +147,7 @@ export async function parseTranscriptPreview(userId: string, transcript: string,
     });
   }
 
-  const preview = await parseCapturePreview(userId, transcript, baseDate);
+  const preview = await parseCapturePreview(workspaceId, transcript, baseDate);
   const summary = summarizeTranscriptFallback(transcript);
   const keyTakeaways = deriveTakeaways(transcript);
   const actionItems = deriveActionItems(transcript, preview);

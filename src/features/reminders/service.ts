@@ -2,7 +2,7 @@ import { DealStage, TaskRecurrencePattern, TaskStatus } from "@prisma/client";
 import { addDays, subDays, startOfDay } from "date-fns";
 import { db } from "@/lib/db";
 
-export async function getRemindersData(userId: string) {
+export async function getRemindersData(workspaceId: string) {
   const today = startOfDay(new Date());
   const nextWeek = addDays(today, 7);
   const staleThreshold = subDays(today, 7);
@@ -10,7 +10,7 @@ export async function getRemindersData(userId: string) {
   const [overdueTasks, upcomingTasks, recurringTasks, staleDeals, dealsWithoutNextStep] = await Promise.all([
     db.task.findMany({
       where: {
-        userId,
+        workspaceId,
         status: TaskStatus.OPEN,
         dueDate: {
           lt: today
@@ -26,7 +26,7 @@ export async function getRemindersData(userId: string) {
     }),
     db.task.findMany({
       where: {
-        userId,
+        workspaceId,
         status: TaskStatus.OPEN,
         dueDate: {
           gte: today,
@@ -43,7 +43,7 @@ export async function getRemindersData(userId: string) {
     }),
     db.task.findMany({
       where: {
-        userId,
+        workspaceId,
         status: TaskStatus.OPEN,
         recurrencePattern: {
           not: TaskRecurrencePattern.NONE
@@ -60,7 +60,7 @@ export async function getRemindersData(userId: string) {
     }),
     db.deal.findMany({
       where: {
-        userId,
+        workspaceId,
         stage: {
           notIn: [DealStage.WON, DealStage.LOST]
         },
@@ -78,7 +78,7 @@ export async function getRemindersData(userId: string) {
     }),
     db.deal.findMany({
       where: {
-        userId,
+        workspaceId,
         stage: {
           notIn: [DealStage.WON, DealStage.LOST]
         },

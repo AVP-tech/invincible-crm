@@ -15,7 +15,7 @@ import { ConversationSourceBadge, DealStageBadge, TaskPriorityBadge, TaskRecurre
 export default async function ContactDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
   const { id } = await params;
-  const contact = await getContact(user.id, id);
+  const contact = await getContact(user.workspaceId, id);
 
   if (!contact) {
     notFound();

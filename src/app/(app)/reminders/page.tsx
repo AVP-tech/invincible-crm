@@ -10,7 +10,7 @@ import { PageHeader } from "@/components/ui/page-header";
 
 export default async function RemindersPage() {
   const user = await requireUser();
-  const reminders = await getRemindersData(user.id);
+  const reminders = await getRemindersData(user.workspaceId);
 
   return (
     <div className="space-y-6">

@@ -12,7 +12,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
   const user = await requireUser();
   const params = await searchParams;
   const query = params.q ?? "";
-  const results = await globalSearch(user.id, query);
+  const results = await globalSearch(user.workspaceId, query);
 
   return (
     <div className="space-y-6">

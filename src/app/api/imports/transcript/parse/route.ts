@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     return jsonError(parsed.error.issues[0]?.message ?? "Invalid transcript import request");
   }
 
-  const preview = await parseTranscriptPreview(user.id, parsed.data.transcript);
+  const preview = await parseTranscriptPreview(user.workspaceId, parsed.data.transcript);
 
   return NextResponse.json({
     ok: true,

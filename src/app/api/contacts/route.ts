@@ -21,7 +21,7 @@ export async function POST(request: Request) {
     return jsonError(parsed.error.issues[0]?.message ?? "Invalid contact payload");
   }
 
-  const contact = await createContact(user.id, parsed.data);
+  const contact = await createContact(user.workspaceId, user.id, parsed.data);
 
   return NextResponse.json({ ok: true, contact });
 }

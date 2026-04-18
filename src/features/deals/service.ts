@@ -4,29 +4,29 @@ import { logActivity } from "@/lib/activity";
 import { type DealInput } from "@/lib/schemas";
 import { serializeDateInput } from "@/lib/utils";
 import { runAutomationTrigger } from "@/features/automations/service";
-import { getWorkspaceByOwnerUserId } from "@/lib/workspace";
 
-async function resolveCompany(userId: string, companyName?: string) {
+async function resolveCompany(workspaceId: string, userId: string, companyName?: string) {
   if (!companyName) return null;
 
   return db.company.upsert({
     where: {
-      userId_name: {
-        userId,
+      workspaceId_name: {
+        workspaceId,
         name: companyName
       }
     },
     update: {},
     create: {
       userId,
+      workspaceId,
       name: companyName
     }
   });
 }
 
-export async function listDeals(userId: string) {
+export async function listDeals(workspaceId: string) {
   return db.deal.findMany({
-    where: { userId },
+    where: { workspaceId },
     include: {
       contact: true,
       company: true,
@@ -39,11 +39,11 @@ export async function listDeals(userId: string) {
   });
 }
 
-export async function getDeal(userId: string, dealId: string) {
+export async function getDeal(workspaceId: string, dealId: string) {
   return db.deal.findFirst({
     where: {
       id: dealId,
-      userId
+      workspaceId
     },
     include: {
       contact: true,
@@ -69,12 +69,13 @@ export async function getDeal(userId: string, dealId: string) {
   });
 }
 
-export async function createDeal(userId: string, input: DealInput) {
-  const company = await resolveCompany(userId, input.companyName);
+export async function createDeal(workspaceId: string, userId: string, input: DealInput) {
+  const company = await resolveCompany(workspaceId, userId, input.companyName);
 
   const deal = await db.deal.create({
     data: {
       userId,
+      workspaceId,
       title: input.title,
       description: input.description,
       stage: input.stage,
@@ -95,6 +96,7 @@ export async function createDeal(userId: string, input: DealInput) {
 
   await logActivity({
     userId,
+    workspaceId,
     type: ActivityType.DEAL_CREATED,
     title: `Created deal: ${deal.title}`,
     description: deal.nextStep ?? undefined,
@@ -107,11 +109,25 @@ export async function createDeal(userId: string, input: DealInput) {
   return deal;
 }
 
-export async function updateDeal(userId: string, dealId: string, input: DealInput) {
-  const company = await resolveCompany(userId, input.companyName);
+export async function updateDeal(workspaceId: string, userId: string, dealId: string, input: DealInput) {
+  const existing = await db.deal.findFirst({
+    where: {
+      id: dealId,
+      workspaceId
+    },
+    select: {
+      id: true
+    }
+  });
+
+  if (!existing) {
+    return null;
+  }
+
+  const company = await resolveCompany(workspaceId, userId, input.companyName);
 
   const deal = await db.deal.update({
-    where: { id: dealId },
+    where: { id: existing.id },
     data: {
       title: input.title,
       description: input.description,
@@ -133,6 +149,7 @@ export async function updateDeal(userId: string, dealId: string, input: DealInpu
 
   await logActivity({
     userId,
+    workspaceId,
     type: ActivityType.DEAL_UPDATED,
     title: `Updated deal: ${deal.title}`,
     entityType: "deal",
@@ -144,9 +161,23 @@ export async function updateDeal(userId: string, dealId: string, input: DealInpu
   return deal;
 }
 
-export async function moveDealStage(userId: string, dealId: string, stage: DealStage) {
+export async function moveDealStage(workspaceId: string, userId: string, dealId: string, stage: DealStage) {
+  const existing = await db.deal.findFirst({
+    where: {
+      id: dealId,
+      workspaceId
+    },
+    select: {
+      id: true
+    }
+  });
+
+  if (!existing) {
+    return null;
+  }
+
   const deal = await db.deal.update({
-    where: { id: dealId },
+    where: { id: existing.id },
     data: { stage },
     include: {
       contact: true
@@ -155,6 +186,7 @@ export async function moveDealStage(userId: string, dealId: string, stage: DealS
 
   await logActivity({
     userId,
+    workspaceId,
     type: ActivityType.DEAL_STAGE_CHANGED,
     title: `${deal.title} moved to ${stage.replaceAll("_", " ")}`,
     entityType: "deal",
@@ -163,37 +195,33 @@ export async function moveDealStage(userId: string, dealId: string, stage: DealS
     dealId: deal.id
   });
 
-  const workspace = await getWorkspaceByOwnerUserId(userId);
-
-  if (workspace) {
-    await runAutomationTrigger({
-      workspaceId: workspace.id,
-      workspaceOwnerId: userId,
-      triggerType: "DEAL_STAGE_CHANGED",
-      deal: {
-        id: deal.id,
-        title: deal.title,
-        stage: deal.stage,
-        contactId: deal.contactId,
-        assignedToUserId: deal.assignedToUserId
-      },
-      contact: deal.contact
-        ? {
-            id: deal.contact.id,
-            name: deal.contact.name
-          }
-        : undefined
-    });
-  }
+  await runAutomationTrigger({
+    workspaceId,
+    workspaceOwnerId: userId,
+    triggerType: "DEAL_STAGE_CHANGED",
+    deal: {
+      id: deal.id,
+      title: deal.title,
+      stage: deal.stage,
+      contactId: deal.contactId,
+      assignedToUserId: deal.assignedToUserId
+    },
+    contact: deal.contact
+      ? {
+          id: deal.contact.id,
+          name: deal.contact.name
+        }
+      : undefined
+  });
 
   return deal;
 }
 
-export async function deleteDeal(userId: string, dealId: string) {
+export async function deleteDeal(workspaceId: string, userId: string, dealId: string) {
   const deal = await db.deal.findFirst({
     where: {
       id: dealId,
-      userId
+      workspaceId
     }
   });
 
@@ -207,6 +235,7 @@ export async function deleteDeal(userId: string, dealId: string) {
 
   await logActivity({
     userId,
+    workspaceId,
     type: ActivityType.DEAL_DELETED,
     title: `Removed deal: ${deal.title}`,
     entityType: "deal",

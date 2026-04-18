@@ -22,7 +22,11 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   }
 
   const { id } = await params;
-  const contact = await updateContact(user.id, id, parsed.data);
+  const contact = await updateContact(user.workspaceId, user.id, id, parsed.data);
+
+  if (!contact) {
+    return jsonError("Contact not found", 404);
+  }
 
   return NextResponse.json({ ok: true, contact });
 }
@@ -39,7 +43,7 @@ export async function DELETE(_: Request, { params }: { params: Promise<{ id: str
   }
 
   const { id } = await params;
-  const deleted = await deleteContact(user.id, id);
+  const deleted = await deleteContact(user.workspaceId, user.id, id);
 
   if (!deleted) {
     return jsonError("Contact not found", 404);

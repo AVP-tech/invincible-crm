@@ -13,16 +13,16 @@ export default async function EditTaskPage({ params }: { params: Promise<{ id: s
     db.task.findFirst({
       where: {
         id,
-        userId: user.id
+        workspaceId: user.workspaceId
       }
     }),
     db.contact.findMany({
-      where: { userId: user.id },
+      where: { workspaceId: user.workspaceId },
       select: { id: true, name: true },
       orderBy: { name: "asc" }
     }),
     db.deal.findMany({
-      where: { userId: user.id },
+      where: { workspaceId: user.workspaceId },
       select: { id: true, title: true },
       orderBy: { updatedAt: "desc" }
     }),

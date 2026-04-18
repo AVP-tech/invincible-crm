@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "node scripts/render-postgres-schema.mjs && prisma generate --schema prisma/schema.postgres.prisma && prisma db push --schema prisma/schema.postgres.prisma --accept-data-loss && next build",
+    "build": "node scripts/render-postgres-schema.mjs && prisma generate --schema prisma/schema.postgres.prisma && prisma db push --schema prisma/schema.postgres.prisma --accept-data-loss && node scripts/backfill-workspace-ids.mjs && next build",
     "build:local": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint . --max-warnings=0",
@@ -14,9 +14,10 @@
     "jobs:worker": "tsx src/worker/process-jobs.ts",
     "db:generate": "prisma generate",
     "db:generate:pg": "node scripts/render-postgres-schema.mjs && prisma generate --schema prisma/schema.postgres.prisma",
-    "db:push": "node scripts/bootstrap-db.mjs",
-    "db:push:pg": "node scripts/render-postgres-schema.mjs && prisma db push --schema prisma/schema.postgres.prisma",
-    "db:migrate": "node scripts/bootstrap-db.mjs",
+    "db:backfill:workspace": "node scripts/backfill-workspace-ids.mjs",
+    "db:push": "prisma db push --accept-data-loss && node scripts/backfill-workspace-ids.mjs",
+    "db:push:pg": "node scripts/render-postgres-schema.mjs && prisma db push --schema prisma/schema.postgres.prisma --accept-data-loss && node scripts/backfill-workspace-ids.mjs",
+    "db:migrate": "prisma db push --accept-data-loss && node scripts/backfill-workspace-ids.mjs",
     "db:seed": "node prisma/seed.mjs"
   },
   "dependencies": {

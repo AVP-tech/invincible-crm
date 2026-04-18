@@ -27,7 +27,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   }
 
   const { id } = await params;
-  const deal = await moveDealStage(user.id, id, parsed.data.stage);
+  const deal = await moveDealStage(user.workspaceId, user.id, id, parsed.data.stage);
+
+  if (!deal) {
+    return jsonError("Deal not found", 404);
+  }
 
   return NextResponse.json({ ok: true, deal });
 }

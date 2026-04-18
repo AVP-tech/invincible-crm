@@ -8,7 +8,7 @@ export default async function NewDealPage() {
   const user = await requireUser();
   const [contacts, members] = await Promise.all([
     db.contact.findMany({
-      where: { userId: user.id },
+      where: { workspaceId: user.workspaceId },
       select: { id: true, name: true },
       orderBy: { name: "asc" }
     }),

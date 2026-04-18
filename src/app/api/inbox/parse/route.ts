@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     return jsonError(parsed.error.issues[0]?.message ?? "Invalid inbox capture input");
   }
 
-  const preview = await parseInboxPreview(user.id, parsed.data);
+  const preview = await parseInboxPreview(user.workspaceId, parsed.data);
 
   return NextResponse.json({ ok: true, preview });
 }

@@ -21,7 +21,7 @@ export async function POST(request: Request) {
     return jsonError(parsed.error.issues[0]?.message ?? "Invalid inbox capture payload");
   }
 
-  const result = await applyInboxPreview(user.id, parsed.data);
+  const result = await applyInboxPreview(user.workspaceId, user.id, parsed.data);
 
   return NextResponse.json({
     ok: true,

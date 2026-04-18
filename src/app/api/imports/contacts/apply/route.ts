@@ -21,7 +21,7 @@ export async function POST(request: Request) {
     return jsonError(parsed.error.issues[0]?.message ?? "Invalid CSV import confirmation");
   }
 
-  const result = await applyCsvContactImport(user.id, parsed.data.preview);
+  const result = await applyCsvContactImport(user.workspaceId, user.id, parsed.data.preview);
 
   return NextResponse.json({
     ok: true,

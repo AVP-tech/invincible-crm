@@ -21,7 +21,7 @@ export async function POST(request: Request) {
     return jsonError(parsed.error.issues[0]?.message ?? "Invalid capture confirmation");
   }
 
-  const result = await applyCapturePreview(user.id, parsed.data.input, parsed.data.preview);
+  const result = await applyCapturePreview(user.workspaceId, user.id, parsed.data.input, parsed.data.preview);
 
   return NextResponse.json({
     ok: true,

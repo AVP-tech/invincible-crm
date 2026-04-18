@@ -6,7 +6,6 @@ import { logActivity } from "@/lib/activity";
 import { type TaskInput } from "@/lib/schemas";
 import { serializeDateInput } from "@/lib/utils";
 import { formatTaskRecurrence, getNextRecurringDueDate, isRecurringPattern } from "@/features/tasks/recurrence";
-import { getWorkspaceByOwnerUserId } from "@/lib/workspace";
 import { runAutomationTrigger } from "@/features/automations/service";
 
 export type TaskFilter = "all" | "today" | "overdue" | "recurring" | "completed";
@@ -45,12 +44,12 @@ function getDueDateValue(value?: string | null) {
   return value ? new Date(serializeDateInput(value)!) : null;
 }
 
-export async function listTasks(userId: string, filter: TaskFilter = "all") {
+export async function listTasks(workspaceId: string, filter: TaskFilter = "all") {
   const today = startOfDay(new Date());
 
   return db.task.findMany({
     where: {
-      userId,
+      workspaceId,
       ...(filter === "today" && {
         dueDate: {
           gte: today,
@@ -82,13 +81,14 @@ export async function listTasks(userId: string, filter: TaskFilter = "all") {
   });
 }
 
-export async function createTask(userId: string, input: TaskInput) {
+export async function createTask(workspaceId: string, userId: string, input: TaskInput) {
   const recurrence = buildRecurrenceData(input);
   const dueDate = getDueDateValue(input.dueDate);
 
   const task = await db.task.create({
     data: {
       userId,
+      workspaceId,
       title: input.title,
       description: input.description,
       contactId: input.contactId,
@@ -109,6 +109,7 @@ export async function createTask(userId: string, input: TaskInput) {
 
   await logActivity({
     userId,
+    workspaceId,
     type: ActivityType.TASK_CREATED,
     title: `Created task: ${task.title}`,
     description:
@@ -128,11 +129,11 @@ export async function createTask(userId: string, input: TaskInput) {
   return task;
 }
 
-export async function updateTask(userId: string, taskId: string, input: TaskInput): Promise<TaskMutationResult | null> {
+export async function updateTask(workspaceId: string, userId: string, taskId: string, input: TaskInput): Promise<TaskMutationResult | null> {
   const existing = await db.task.findFirst({
     where: {
       id: taskId,
-      userId
+      workspaceId
     }
   });
 
@@ -171,7 +172,7 @@ export async function updateTask(userId: string, taskId: string, input: TaskInpu
   if (existing.status !== TaskStatus.COMPLETED && task.status === TaskStatus.COMPLETED && isRecurringPattern(task.recurrencePattern) && task.dueDate) {
     const alreadyScheduled = await db.task.findFirst({
       where: {
-        userId,
+        workspaceId,
         recurrenceSeriesId: task.recurrenceSeriesId ?? undefined,
         status: TaskStatus.OPEN,
         dueDate: {
@@ -190,6 +191,7 @@ export async function updateTask(userId: string, taskId: string, input: TaskInpu
         spawnedTask = await db.task.create({
           data: {
             userId,
+            workspaceId,
             title: task.title,
             description: task.description,
             contactId: task.contactId,
@@ -210,6 +212,7 @@ export async function updateTask(userId: string, taskId: string, input: TaskInpu
 
         await logActivity({
           userId,
+          workspaceId,
           type: ActivityType.TASK_RECURRING_SCHEDULED,
           title: `Scheduled next recurring task: ${spawnedTask.title}`,
           description: spawnedTask.dueDate ? `Due ${spawnedTask.dueDate.toDateString()}` : undefined,
@@ -225,6 +228,7 @@ export async function updateTask(userId: string, taskId: string, input: TaskInpu
 
   await logActivity({
     userId,
+    workspaceId,
     type: task.status === TaskStatus.COMPLETED ? ActivityType.TASK_COMPLETED : ActivityType.TASK_UPDATED,
     title: `${task.status === TaskStatus.COMPLETED ? "Completed" : "Updated"} task: ${task.title}`,
     description: spawnedTask ? `Next recurring follow-up scheduled for ${spawnedTask.dueDate?.toDateString()}` : undefined,
@@ -236,28 +240,24 @@ export async function updateTask(userId: string, taskId: string, input: TaskInpu
   });
 
   if (task.status === TaskStatus.COMPLETED) {
-    const workspace = await getWorkspaceByOwnerUserId(userId);
-
-    if (workspace) {
-      await runAutomationTrigger({
-        workspaceId: workspace.id,
-        workspaceOwnerId: userId,
-        triggerType: "TASK_COMPLETED",
-        task: {
-          id: task.id,
-          title: task.title,
-          contactId: task.contactId,
-          dealId: task.dealId,
-          assignedToUserId: task.assignedToUserId
-        },
-        contact: task.contact
-          ? {
-              id: task.contact.id,
-              name: task.contact.name
-            }
-          : undefined
-      });
-    }
+    await runAutomationTrigger({
+      workspaceId,
+      workspaceOwnerId: userId,
+      triggerType: "TASK_COMPLETED",
+      task: {
+        id: task.id,
+        title: task.title,
+        contactId: task.contactId,
+        dealId: task.dealId,
+        assignedToUserId: task.assignedToUserId
+      },
+      contact: task.contact
+        ? {
+            id: task.contact.id,
+            name: task.contact.name
+          }
+        : undefined
+    });
   }
 
   return {
@@ -266,11 +266,11 @@ export async function updateTask(userId: string, taskId: string, input: TaskInpu
   };
 }
 
-export async function quickToggleTask(userId: string, taskId: string) {
+export async function quickToggleTask(workspaceId: string, userId: string, taskId: string) {
   const existing = await db.task.findFirst({
     where: {
       id: taskId,
-      userId
+      workspaceId
     }
   });
 
@@ -278,7 +278,7 @@ export async function quickToggleTask(userId: string, taskId: string) {
 
   const status = existing.status === TaskStatus.OPEN ? TaskStatus.COMPLETED : TaskStatus.OPEN;
 
-  return updateTask(userId, taskId, {
+  return updateTask(workspaceId, userId, taskId, {
     title: existing.title,
     description: existing.description ?? undefined,
     contactId: existing.contactId ?? undefined,
@@ -292,11 +292,11 @@ export async function quickToggleTask(userId: string, taskId: string) {
   });
 }
 
-export async function deleteTask(userId: string, taskId: string) {
+export async function deleteTask(workspaceId: string, userId: string, taskId: string) {
   const task = await db.task.findFirst({
     where: {
       id: taskId,
-      userId
+      workspaceId
     }
   });
 
@@ -308,6 +308,7 @@ export async function deleteTask(userId: string, taskId: string) {
 
   await logActivity({
     userId,
+    workspaceId,
     type: ActivityType.TASK_DELETED,
     title: `Removed task: ${task.title}`,
     entityType: "task",

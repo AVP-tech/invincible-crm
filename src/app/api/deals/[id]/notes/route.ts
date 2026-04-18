@@ -22,7 +22,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   }
 
   const { id } = await params;
-  const note = await addDealNote(user.id, id, parsed.data.content);
+  const note = await addDealNote(user.workspaceId, user.id, id, parsed.data.content);
 
   if (!note) {
     return jsonError("Deal not found", 404);

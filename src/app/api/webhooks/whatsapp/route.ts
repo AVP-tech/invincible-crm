@@ -2,6 +2,7 @@ import { after, NextResponse } from "next/server";
 import {
   findWhatsappIntegrationByPhoneNumberId,
 } from "@/features/integrations/service";
+import { saveWhatsappMessageToCrm } from "@/features/integrations/whatsapp-crm";
 import { enqueueBackgroundJob } from "@/features/jobs/service";
 import { JobType, Prisma } from "@prisma/client";
 import { env } from "@/lib/env";
@@ -16,9 +17,13 @@ type WhatsappWebhookPayload = {
           phone_number_id?: string;
         };
         contacts?: Array<{
+          profile?: {
+            name?: string;
+          };
           wa_id?: string;
         }>;
         messages?: Array<{
+          id?: string;
           type?: string;
           from?: string;
           text?: {
@@ -93,7 +98,7 @@ async function sendWhatsappAutoReply(senderPhone: string) {
       return;
     }
 
-    logger.info("WhatsApp auto-reply sent.", {
+    logger.info("Reply sent", {
       senderPhone
     });
   } catch (error) {
@@ -148,26 +153,43 @@ export async function POST(request: Request) {
     const payload = JSON.parse(rawBody) as WhatsappWebhookPayload;
     const firstValue = payload.entry?.[0]?.changes?.[0]?.value;
     const firstMessage = firstValue?.messages?.[0];
-    const senderPhone = firstMessage?.from ?? firstValue?.contacts?.[0]?.wa_id ?? "unknown";
+    const phoneNumberId = firstValue?.metadata?.phone_number_id;
+    const senderPhone = firstMessage?.from ?? "unknown";
     const messageText = firstMessage?.text?.body ?? "[no text body]";
+    const contactName =
+      firstValue?.contacts?.find((contact) => contact.wa_id === firstMessage?.from)?.profile?.name ??
+      firstValue?.contacts?.[0]?.profile?.name;
+    const receivedAt = new Date();
 
-    logger.info("WhatsApp message received.", {
-      phoneNumberId: firstValue?.metadata?.phone_number_id,
+    logger.info("New message received", {
+      phoneNumberId,
       senderPhone,
-      messageText
+      messageText,
+      externalMessageId: firstMessage?.id
     });
 
     // Acknowledge Meta immediately, then send the reply and queue follow-up work.
     after(async () => {
+      const backgroundTasks: Promise<unknown>[] = [enqueueWhatsappProcessing(payload)];
+
       if (firstMessage?.from) {
-        await sendWhatsappAutoReply(firstMessage.from);
+        backgroundTasks.push(
+          saveWhatsappMessageToCrm({
+            phoneNumberId,
+            senderPhone: firstMessage.from,
+            messageText,
+            contactName,
+            receivedAt
+          })
+        );
+        backgroundTasks.push(sendWhatsappAutoReply(firstMessage.from));
       } else {
         logger.info("WhatsApp auto-reply skipped because no inbound message was available.", {
           senderPhone
         });
       }
 
-      await enqueueWhatsappProcessing(payload);
+      await Promise.allSettled(backgroundTasks);
     });
   } catch (error) {
     logger.warn("WhatsApp webhook received an invalid JSON payload, but the webhook was acknowledged.", {

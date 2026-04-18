@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     return jsonError(parsed.error.issues[0]?.message ?? "Invalid CSV preview request");
   }
 
-  const preview = await previewCsvContactImport(user.id, parsed.data.csvText);
+  const preview = await previewCsvContactImport(user.workspaceId, parsed.data.csvText);
 
   return NextResponse.json({
     ok: true,

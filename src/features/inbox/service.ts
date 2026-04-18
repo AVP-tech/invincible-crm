@@ -7,7 +7,6 @@ import { logActivity } from "@/lib/activity";
 import { inboxPreviewSchema, type InboxPreview } from "@/lib/schemas";
 import { parseCapturePreview } from "@/features/capture/parser";
 import { applyCapturePreview } from "@/features/capture/service";
-import { getWorkspaceByOwnerUserId } from "@/lib/workspace";
 import { runAutomationTrigger } from "@/features/automations/service";
 
 const inboxSystemPrompt = `
@@ -173,7 +172,7 @@ async function parseWithOpenAi(input: InboxInput, baseDate = new Date()) {
   return parsed.success ? parsed.data : null;
 }
 
-export async function parseInboxPreview(userId: string, input: InboxInput, baseDate = new Date()): Promise<InboxPreview> {
+export async function parseInboxPreview(workspaceId: string, input: InboxInput, baseDate = new Date()): Promise<InboxPreview> {
   try {
     const aiPreview = await parseWithOpenAi(input, baseDate);
 
@@ -187,7 +186,7 @@ export async function parseInboxPreview(userId: string, input: InboxInput, baseD
     });
   }
 
-  const preview = await parseCapturePreview(userId, normalizeConversationBody(input.content), baseDate);
+  const preview = await parseCapturePreview(workspaceId, normalizeConversationBody(input.content), baseDate);
   const summary = summarizeConversation(input.subject, input.participantLabel, input.content);
   const actionItems = deriveActionItems(input.content, preview.task?.title);
 
@@ -205,6 +204,7 @@ export async function parseInboxPreview(userId: string, input: InboxInput, baseD
 }
 
 export async function applyInboxPreview(
+  workspaceId: string,
   userId: string,
   input: InboxInput & {
     summary: string;
@@ -216,6 +216,7 @@ export async function applyInboxPreview(
 ) {
   const note = buildConversationNote(input.source, input.summary, input.actionItems, input.subject, input.participantLabel, input.preview.note);
   const captureResult = await applyCapturePreview(
+    workspaceId,
     userId,
     `${sourceCopy[input.source]} conversation\n${input.subject ?? ""}\n${input.participantLabel ?? ""}\n${input.content}`.trim(),
     {
@@ -236,6 +237,7 @@ export async function applyInboxPreview(
   const conversation = await db.conversationLog.create({
     data: {
       userId,
+      workspaceId,
       contactId: captureResult.contactId ?? undefined,
       dealId: captureResult.dealId ?? undefined,
       parsedCaptureId: captureResult.parsedCapture.id,
@@ -256,6 +258,7 @@ export async function applyInboxPreview(
 
   await logActivity({
     userId,
+    workspaceId,
     type: ActivityType.CONVERSATION_CAPTURED,
     title: `${sourceCopy[input.source]} conversation captured`,
     description: input.summary,
@@ -271,36 +274,32 @@ export async function applyInboxPreview(
     }
   });
 
-  const workspace = await getWorkspaceByOwnerUserId(userId);
+  const contact = conversation.contactId
+    ? await db.contact.findFirst({
+        where: {
+          id: conversation.contactId,
+          workspaceId
+        }
+      })
+    : null;
 
-  if (workspace) {
-    const contact = conversation.contactId
-      ? await db.contact.findFirst({
-          where: {
-            id: conversation.contactId,
-            userId
-          }
-        })
-      : null;
-
-    await runAutomationTrigger({
-      workspaceId: workspace.id,
-      workspaceOwnerId: userId,
-      triggerType: "CONVERSATION_CAPTURED",
-      conversation: {
-        id: conversation.id,
-        summary: conversation.summary,
-        contactId: conversation.contactId,
-        dealId: conversation.dealId
-      },
-      contact: contact
-        ? {
-            id: contact.id,
-            name: contact.name
-          }
-        : undefined
-    });
-  }
+  await runAutomationTrigger({
+    workspaceId,
+    workspaceOwnerId: userId,
+    triggerType: "CONVERSATION_CAPTURED",
+    conversation: {
+      id: conversation.id,
+      summary: conversation.summary,
+      contactId: conversation.contactId,
+      dealId: conversation.dealId
+    },
+    contact: contact
+      ? {
+          id: contact.id,
+          name: contact.name
+        }
+      : undefined
+  });
 
   return {
     conversation,
@@ -308,9 +307,9 @@ export async function applyInboxPreview(
   };
 }
 
-export async function listRecentInboxCaptures(userId: string) {
+export async function listRecentInboxCaptures(workspaceId: string) {
   return db.conversationLog.findMany({
-    where: { userId },
+    where: { workspaceId },
     include: {
       contact: true,
       deal: true

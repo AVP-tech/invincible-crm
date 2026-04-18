@@ -14,7 +14,7 @@ import { DealStageBadge, TaskPriorityBadge, TaskStatusBadge } from "@/components
 export default async function DealDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
   const { id } = await params;
-  const deal = await getDeal(user.id, id);
+  const deal = await getDeal(user.workspaceId, id);
 
   if (!deal) {
     notFound();

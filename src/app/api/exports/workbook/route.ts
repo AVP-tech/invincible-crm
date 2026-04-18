@@ -13,15 +13,15 @@ export async function GET() {
 
   const [contacts, deals, tasks, invoices] = await Promise.all([
     db.contact.findMany({
-      where: { userId: user.workspaceOwnerId },
+      where: { workspaceId: user.workspaceId },
       include: { company: true }
     }),
     db.deal.findMany({
-      where: { userId: user.workspaceOwnerId },
+      where: { workspaceId: user.workspaceId },
       include: { contact: true, assignee: true, company: true }
     }),
     db.task.findMany({
-      where: { userId: user.workspaceOwnerId },
+      where: { workspaceId: user.workspaceId },
       include: { contact: true, deal: true, assignee: true }
     }),
     db.invoice.findMany({

@@ -14,12 +14,12 @@ export default async function FinancePage() {
   const [invoices, contacts, deals] = await Promise.all([
     listInvoices(user.workspaceId),
     db.contact.findMany({
-      where: { userId: user.workspaceOwnerId },
+      where: { workspaceId: user.workspaceId },
       select: { id: true, name: true },
       orderBy: { name: "asc" }
     }),
     db.deal.findMany({
-      where: { userId: user.workspaceOwnerId },
+      where: { workspaceId: user.workspaceId },
       select: { id: true, title: true },
       orderBy: { updatedAt: "desc" }
     })

@@ -14,25 +14,27 @@ type ApplyCaptureOptions = {
   noteActivityTitle?: string;
 };
 
-async function resolveCompany(tx: Prisma.TransactionClient, userId: string, companyName?: string) {
+async function resolveCompany(tx: Prisma.TransactionClient, workspaceId: string, userId: string, companyName?: string) {
   if (!companyName) return null;
 
   return tx.company.upsert({
     where: {
-      userId_name: {
-        userId,
+      workspaceId_name: {
+        workspaceId,
         name: companyName
       }
     },
     update: {},
     create: {
       userId,
+      workspaceId,
       name: companyName
     }
   });
 }
 
 export async function applyCapturePreview(
+  workspaceId: string,
   userId: string,
   input: string,
   preview: CapturePreview,
@@ -42,6 +44,7 @@ export async function applyCapturePreview(
     const parsedCapture = await tx.parsedCapture.create({
       data: {
         userId,
+        workspaceId,
         inputText: input,
         status: CaptureStatus.APPLIED,
         parserMode: preview.parserMode === "AI" ? ParserMode.AI : ParserMode.FALLBACK,
@@ -57,7 +60,7 @@ export async function applyCapturePreview(
     let taskId: string | null = null;
 
     if (preview.contact?.name) {
-      const company = await resolveCompany(tx, userId, preview.contact.companyName ?? undefined);
+      const company = await resolveCompany(tx, workspaceId, userId, preview.contact.companyName ?? undefined);
 
       if (contactId) {
         await tx.contact.update({
@@ -75,6 +78,7 @@ export async function applyCapturePreview(
         const contact = await tx.contact.create({
           data: {
             userId,
+            workspaceId,
             name: preview.contact.name,
             email: preview.contact.email ?? undefined,
             phone: preview.contact.phone ?? undefined,
@@ -89,7 +93,7 @@ export async function applyCapturePreview(
     }
 
     if (preview.deal?.title) {
-      const company = await resolveCompany(tx, userId, preview.contact?.companyName ?? undefined);
+      const company = await resolveCompany(tx, workspaceId, userId, preview.contact?.companyName ?? undefined);
 
       if (dealId) {
         await tx.deal.update({
@@ -110,6 +114,7 @@ export async function applyCapturePreview(
         const deal = await tx.deal.create({
           data: {
             userId,
+            workspaceId,
             contactId: contactId ?? undefined,
             companyId: company?.id,
             title: preview.deal.title,
@@ -129,7 +134,7 @@ export async function applyCapturePreview(
     if (preview.task?.title) {
       const existingTask = await tx.task.findFirst({
         where: {
-          userId,
+          workspaceId,
           title: preview.task.title,
           status: TaskStatus.OPEN,
           contactId: contactId ?? undefined
@@ -153,6 +158,7 @@ export async function applyCapturePreview(
         const task = await tx.task.create({
           data: {
             userId,
+            workspaceId,
             title: preview.task.title,
             description: preview.task.description ?? undefined,
             dueDate: preview.task.dueDate ? new Date(preview.task.dueDate) : undefined,
@@ -175,6 +181,7 @@ export async function applyCapturePreview(
       const note = await tx.note.create({
         data: {
           userId,
+          workspaceId,
           contactId: contactId ?? undefined,
           dealId: dealId ?? undefined,
           content: preview.note,
@@ -196,6 +203,7 @@ export async function applyCapturePreview(
 
   await logActivity({
     userId,
+    workspaceId,
     type: ActivityType.CAPTURE_APPLIED,
     title: options.captureTitle ?? "AI quick capture applied",
     description: options.captureDescription ?? preview.summary,
@@ -211,6 +219,7 @@ export async function applyCapturePreview(
   if (result.contactId) {
     await logActivity({
       userId,
+      workspaceId,
       type: preview.existingContactId ? ActivityType.CONTACT_UPDATED : ActivityType.CONTACT_CREATED,
       title:
         options.contactActivityTitle ??
@@ -224,6 +233,7 @@ export async function applyCapturePreview(
   if (result.dealId) {
     await logActivity({
       userId,
+      workspaceId,
       type: preview.existingDealId ? ActivityType.DEAL_UPDATED : ActivityType.DEAL_CREATED,
       title: options.dealActivityTitle ?? (preview.existingDealId ? "Updated deal via quick capture" : "Created deal via quick capture"),
       entityType: "deal",
@@ -236,6 +246,7 @@ export async function applyCapturePreview(
   if (result.taskId) {
     await logActivity({
       userId,
+      workspaceId,
       type: ActivityType.TASK_CREATED,
       title: options.taskActivityTitle ?? "Created task via quick capture",
       entityType: "task",
@@ -249,6 +260,7 @@ export async function applyCapturePreview(
   if (result.noteId) {
     await logActivity({
       userId,
+      workspaceId,
       type: ActivityType.NOTE_ADDED,
       title: options.noteActivityTitle ?? "Added note via quick capture",
       entityType: "note",

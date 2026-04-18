@@ -22,7 +22,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   }
 
   const { id } = await params;
-  const note = await addContactNote(user.id, id, parsed.data.content);
+  const note = await addContactNote(user.workspaceId, user.id, id, parsed.data.content);
+
+  if (!note) {
+    return jsonError("Contact not found", 404);
+  }
 
   return NextResponse.json({ ok: true, note });
 }

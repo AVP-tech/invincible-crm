@@ -174,10 +174,18 @@ model Workspace {
   updatedAt   DateTime              @updatedAt
   ownerUser   User                  @relation("WorkspaceOwner", fields: [ownerUserId], references: [id], onDelete: Cascade)
   memberships WorkspaceMembership[]
+  companies   Company[]
+  contacts    Contact[]
+  deals       Deal[]
+  tasks       Task[]
+  notes       Note[]
+  activities  Activity[]
+  captures    ParsedCapture[]
   integrations IntegrationConnection[]
   automationRules AutomationRule[]
   invoices    Invoice[]
   jobs        BackgroundJob[]
+  conversationLogs ConversationLog[]
 
   @@index([createdAt])
 }
@@ -201,6 +209,7 @@ model WorkspaceMembership {
 model Company {
   id        String    @id @default(cuid())
   userId    String
+  workspaceId String?
   name      String
   website   String?
   industry  String?
@@ -208,16 +217,18 @@ model Company {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   contacts  Contact[]
   deals     Deal[]
 
-  @@unique([userId, name])
-  @@index([userId])
+  @@unique([workspaceId, name])
+  @@index([workspaceId])
 }
 
 model Contact {
   id         String     @id @default(cuid())
   userId     String
+  workspaceId String?
   companyId  String?
   name       String
   email      String?
@@ -227,6 +238,7 @@ model Contact {
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
   user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace  Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   company    Company?   @relation(fields: [companyId], references: [id], onDelete: SetNull)
   deals      Deal[]
   tasks      Task[]
@@ -235,13 +247,15 @@ model Contact {
   conversationLogs ConversationLog[]
   invoices   Invoice[]
 
-  @@index([userId, name])
-  @@index([userId, email])
+  @@index([workspaceId, name])
+  @@index([workspaceId, email])
+  @@index([workspaceId, phone])
 }
 
 model Deal {
   id                String       @id @default(cuid())
   userId            String
+  workspaceId       String?
   contactId         String?
   companyId         String?
   assignedToUserId  String?
@@ -255,6 +269,7 @@ model Deal {
   createdAt         DateTime     @default(now())
   updatedAt         DateTime     @updatedAt
   user              User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace         Workspace?   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   contact           Contact?     @relation(fields: [contactId], references: [id], onDelete: SetNull)
   company           Company?     @relation(fields: [companyId], references: [id], onDelete: SetNull)
   assignee          User?        @relation("AssignedDeals", fields: [assignedToUserId], references: [id], onDelete: SetNull)
@@ -264,7 +279,7 @@ model Deal {
   conversationLogs  ConversationLog[]
   invoices          Invoice[]
 
-  @@index([userId, stage])
+  @@index([workspaceId, stage])
   @@index([contactId])
   @@index([assignedToUserId])
 }
@@ -272,6 +287,7 @@ model Deal {
 model Task {
   id          String       @id @default(cuid())
   userId      String
+  workspaceId String?
   contactId   String?
   dealId      String?
   assignedToUserId String?
@@ -287,19 +303,21 @@ model Task {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace   Workspace?   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   contact     Contact?     @relation(fields: [contactId], references: [id], onDelete: SetNull)
   deal        Deal?        @relation(fields: [dealId], references: [id], onDelete: SetNull)
   assignee    User?        @relation("AssignedTasks", fields: [assignedToUserId], references: [id], onDelete: SetNull)
   activities  Activity[]   @relation("TaskActivities")
 
-  @@index([userId, status, dueDate])
-  @@index([userId, recurrenceSeriesId])
+  @@index([workspaceId, status, dueDate])
+  @@index([workspaceId, recurrenceSeriesId])
   @@index([assignedToUserId])
 }
 
 model Note {
   id         String      @id @default(cuid())
   userId     String
+  workspaceId String?
   contactId  String?
   dealId     String?
   content    String
@@ -307,16 +325,18 @@ model Note {
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
   user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace  Workspace?  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   contact    Contact?    @relation(fields: [contactId], references: [id], onDelete: SetNull)
   deal       Deal?       @relation(fields: [dealId], references: [id], onDelete: SetNull)
   activities Activity[]  @relation("NoteActivities")
 
-  @@index([userId, createdAt])
+  @@index([workspaceId, createdAt])
 }
 
 model Activity {
   id          String       @id @default(cuid())
   userId      String
+  workspaceId String?
   type        ActivityType
   title       String
   description String?
@@ -329,12 +349,13 @@ model Activity {
   noteId      String?
   createdAt   DateTime     @default(now())
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace   Workspace?   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   contact     Contact?     @relation("ContactActivities", fields: [contactId], references: [id], onDelete: SetNull)
   deal        Deal?        @relation("DealActivities", fields: [dealId], references: [id], onDelete: SetNull)
   task        Task?        @relation("TaskActivities", fields: [taskId], references: [id], onDelete: SetNull)
   note        Note?        @relation("NoteActivities", fields: [noteId], references: [id], onDelete: SetNull)
 
-  @@index([userId, createdAt])
+  @@index([workspaceId, createdAt])
   @@index([contactId, createdAt])
   @@index([dealId, createdAt])
 }
@@ -342,6 +363,7 @@ model Activity {
 model ParsedCapture {
   id            String        @id @default(cuid())
   userId        String
+  workspaceId   String?
   inputText     String
   status        CaptureStatus @default(PARSED)
   parserMode    ParserMode
@@ -350,9 +372,10 @@ model ParsedCapture {
   appliedAt     DateTime?
   createdAt     DateTime      @default(now())
   user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace     Workspace?    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   conversationLogs ConversationLog[]
 
-  @@index([userId, createdAt])
+  @@index([workspaceId, createdAt])
 }
 
 model IntegrationConnection {
@@ -441,6 +464,7 @@ model BackgroundJob {
 model ConversationLog {
   id               String             @id @default(cuid())
   userId           String
+  workspaceId      String?
   contactId        String?
   dealId           String?
   parsedCaptureId  String?
@@ -455,12 +479,13 @@ model ConversationLog {
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
   user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace        Workspace?         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   contact          Contact?           @relation(fields: [contactId], references: [id], onDelete: SetNull)
   deal             Deal?              @relation(fields: [dealId], references: [id], onDelete: SetNull)
   parsedCapture    ParsedCapture?     @relation(fields: [parsedCaptureId], references: [id], onDelete: SetNull)
   integrationConnection IntegrationConnection? @relation(fields: [integrationConnectionId], references: [id], onDelete: SetNull)
 
-  @@index([userId, createdAt])
+  @@index([workspaceId, createdAt])
   @@index([contactId, createdAt])
   @@index([dealId, createdAt])
   @@index([integrationConnectionId, createdAt])

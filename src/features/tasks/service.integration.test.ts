@@ -7,12 +7,18 @@ const prisma = new PrismaClient();
 async function resetDatabase() {
   await prisma.activity.deleteMany();
   await prisma.conversationLog.deleteMany();
+  await prisma.backgroundJob.deleteMany();
   await prisma.note.deleteMany();
   await prisma.task.deleteMany();
+  await prisma.invoice.deleteMany();
   await prisma.deal.deleteMany();
   await prisma.contact.deleteMany();
   await prisma.company.deleteMany();
   await prisma.parsedCapture.deleteMany();
+  await prisma.automationRule.deleteMany();
+  await prisma.integrationConnection.deleteMany();
+  await prisma.workspaceMembership.deleteMany();
+  await prisma.workspace.deleteMany();
   await prisma.session.deleteMany();
   await prisma.user.deleteMany();
 }
@@ -35,15 +41,30 @@ describe("recurring task scheduling", () => {
         passwordHash: "hashed"
       }
     });
+    const workspace = await prisma.workspace.create({
+      data: {
+        ownerUserId: user.id,
+        name: "Recurring Workspace"
+      }
+    });
+
+    await prisma.workspaceMembership.create({
+      data: {
+        workspaceId: workspace.id,
+        userId: user.id,
+        role: "OWNER"
+      }
+    });
 
     const contact = await prisma.contact.create({
       data: {
         userId: user.id,
+        workspaceId: workspace.id,
         name: "Rahul Verma"
       }
     });
 
-    const task = await createTask(user.id, {
+    const task = await createTask(workspace.id, user.id, {
       title: "Weekly client follow-up",
       description: "Share progress and keep the deal warm",
       contactId: contact.id,
@@ -54,10 +75,10 @@ describe("recurring task scheduling", () => {
       recurrenceIntervalDays: undefined
     });
 
-    const result = await quickToggleTask(user.id, task.id);
+    const result = await quickToggleTask(workspace.id, user.id, task.id);
     const tasks = await prisma.task.findMany({
       where: {
-        userId: user.id
+        workspaceId: workspace.id
       },
       orderBy: {
         dueDate: "asc"
@@ -65,7 +86,7 @@ describe("recurring task scheduling", () => {
     });
     const recurringActivity = await prisma.activity.findFirst({
       where: {
-        userId: user.id,
+        workspaceId: workspace.id,
         type: "TASK_RECURRING_SCHEDULED"
       }
     });

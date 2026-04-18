@@ -21,7 +21,7 @@ export async function POST(request: Request) {
     return jsonError(parsed.error.issues[0]?.message ?? "Invalid task payload");
   }
 
-  const task = await createTask(user.id, parsed.data);
+  const task = await createTask(user.workspaceId, user.id, parsed.data);
 
   return NextResponse.json({ ok: true, task });
 }

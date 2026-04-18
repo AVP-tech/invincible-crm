@@ -141,6 +141,7 @@ export async function runAutomationTrigger(context: AutomationContext) {
       const task = await db.task.create({
         data: {
           userId: context.workspaceOwnerId,
+          workspaceId: context.workspaceId,
           contactId: context.contact?.id ?? context.deal?.contactId ?? context.task?.contactId ?? context.conversation?.contactId ?? undefined,
           dealId: context.deal?.id ?? context.task?.dealId ?? context.conversation?.dealId ?? undefined,
           assignedToUserId: context.deal?.assignedToUserId ?? context.task?.assignedToUserId ?? undefined,
@@ -153,6 +154,7 @@ export async function runAutomationTrigger(context: AutomationContext) {
 
       await logActivity({
         userId: context.workspaceOwnerId,
+        workspaceId: context.workspaceId,
         type: ActivityType.AUTOMATION_TRIGGERED,
         title: `Automation ran: ${rule.name}`,
         description: `Created task: ${task.title}`,
@@ -172,6 +174,7 @@ export async function runAutomationTrigger(context: AutomationContext) {
       const note = await db.note.create({
         data: {
           userId: context.workspaceOwnerId,
+          workspaceId: context.workspaceId,
           contactId: context.contact?.id ?? context.deal?.contactId ?? context.task?.contactId ?? context.conversation?.contactId ?? undefined,
           dealId: context.deal?.id ?? context.task?.dealId ?? context.conversation?.dealId ?? undefined,
           source: "automation",
@@ -181,6 +184,7 @@ export async function runAutomationTrigger(context: AutomationContext) {
 
       await logActivity({
         userId: context.workspaceOwnerId,
+        workspaceId: context.workspaceId,
         type: ActivityType.AUTOMATION_TRIGGERED,
         title: `Automation ran: ${rule.name}`,
         description: "Added an automation note",

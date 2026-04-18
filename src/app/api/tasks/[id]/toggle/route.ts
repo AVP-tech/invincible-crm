@@ -15,7 +15,7 @@ export async function POST(_: Request, { params }: { params: Promise<{ id: strin
   }
 
   const { id } = await params;
-  const task = await quickToggleTask(user.id, id);
+  const task = await quickToggleTask(user.workspaceId, user.id, id);
 
   if (!task) {
     return jsonError("Task not found", 404);

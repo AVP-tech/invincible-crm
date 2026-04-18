@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   findWhatsappIntegrationByPhoneNumberId: vi.fn(),
+  saveWhatsappMessageToCrm: vi.fn(),
   enqueueBackgroundJob: vi.fn(),
   info: vi.fn(),
   warn: vi.fn()
@@ -9,6 +10,10 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@/features/integrations/service", () => ({
   findWhatsappIntegrationByPhoneNumberId: mocks.findWhatsappIntegrationByPhoneNumberId
+}));
+
+vi.mock("@/features/integrations/whatsapp-crm", () => ({
+  saveWhatsappMessageToCrm: mocks.saveWhatsappMessageToCrm
 }));
 
 vi.mock("@/features/jobs/service", () => ({
@@ -103,10 +108,47 @@ describe("WhatsApp webhook verification route", () => {
     expect(response.status).toBe(200);
     expect(await response.text()).toBe("EVENT_RECEIVED");
     expect(mocks.info).toHaveBeenCalledWith(
-      "WhatsApp message received.",
+      "New message received",
       expect.objectContaining({
         senderPhone: "919999999999",
         messageText: "Hello from WhatsApp"
+      })
+    );
+  });
+
+  it("acknowledges POST payloads with no messages array", async () => {
+    const response = await POST(
+      new Request("https://example.com/api/webhooks/whatsapp", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          object: "whatsapp_business_account",
+          entry: [
+            {
+              changes: [
+                {
+                  value: {
+                    metadata: {
+                      phone_number_id: "phone-number-id"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        })
+      })
+    );
+
+    expect(response.status).toBe(200);
+    expect(await response.text()).toBe("EVENT_RECEIVED");
+    expect(mocks.info).toHaveBeenCalledWith(
+      "New message received",
+      expect.objectContaining({
+        senderPhone: "unknown",
+        messageText: "[no text body]"
       })
     );
   });

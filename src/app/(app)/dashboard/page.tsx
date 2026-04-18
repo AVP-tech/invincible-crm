@@ -14,7 +14,7 @@ import { CometBorder } from "@/components/comet-border";
 
 export default async function DashboardPage() {
   const user = await requireUser();
-  const dashboard = await getDashboardData(user.id);
+  const dashboard = await getDashboardData(user.workspaceId);
 
   return (
     <div className="space-y-6">

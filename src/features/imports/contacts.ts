@@ -15,28 +15,29 @@ function parseTags(tagsText: string) {
     .filter(Boolean);
 }
 
-async function upsertCompany(userId: string, companyName?: string) {
+async function upsertCompany(workspaceId: string, userId: string, companyName?: string) {
   if (!companyName) return null;
 
   return db.company.upsert({
     where: {
-      userId_name: {
-        userId,
+      workspaceId_name: {
+        workspaceId,
         name: companyName
       }
     },
     update: {},
     create: {
       userId,
+      workspaceId,
       name: companyName
     }
   });
 }
 
-export async function previewCsvContactImport(userId: string, csvText: string): Promise<CsvContactImportPreview> {
+export async function previewCsvContactImport(workspaceId: string, csvText: string): Promise<CsvContactImportPreview> {
   const parsedCsv = parseCsvText(csvText);
   const existingContacts = await db.contact.findMany({
-    where: { userId },
+    where: { workspaceId },
     include: {
       company: true
     }
@@ -111,7 +112,7 @@ export async function previewCsvContactImport(userId: string, csvText: string): 
   });
 }
 
-export async function applyCsvContactImport(userId: string, preview: CsvContactImportPreview) {
+export async function applyCsvContactImport(workspaceId: string, userId: string, preview: CsvContactImportPreview) {
   let createdCount = 0;
   let updatedCount = 0;
 
@@ -120,13 +121,14 @@ export async function applyCsvContactImport(userId: string, preview: CsvContactI
       continue;
     }
 
-    const company = await upsertCompany(userId, row.contact.companyName ?? undefined);
+    const company = await upsertCompany(workspaceId, userId, row.contact.companyName ?? undefined);
     const tags = parseTags(row.contact.tagsText);
 
     if (row.action === "create") {
       const contact = await db.contact.create({
         data: {
           userId,
+          workspaceId,
           name: row.contact.name ?? row.contact.email ?? `Imported contact ${row.rowNumber}`,
           email: row.contact.email ?? undefined,
           phone: row.contact.phone ?? undefined,
@@ -140,6 +142,7 @@ export async function applyCsvContactImport(userId: string, preview: CsvContactI
 
       await logActivity({
         userId,
+        workspaceId,
         type: ActivityType.CONTACT_CREATED,
         title: `Created contact from CSV import: ${contact.name}`,
         description: row.reason,
@@ -155,7 +158,7 @@ export async function applyCsvContactImport(userId: string, preview: CsvContactI
       const existing = await db.contact.findFirst({
         where: {
           id: row.existingContactId,
-          userId
+          workspaceId
         }
       });
 
@@ -182,6 +185,7 @@ export async function applyCsvContactImport(userId: string, preview: CsvContactI
 
       await logActivity({
         userId,
+        workspaceId,
         type: ActivityType.CONTACT_UPDATED,
         title: `Updated contact from CSV import: ${contact.name}`,
         description: row.reason,

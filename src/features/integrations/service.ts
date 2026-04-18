@@ -508,6 +508,7 @@ export async function markWhatsappIntegrationVerified(connectionId: string) {
 }
 
 async function applyIntegratedConversation(options: {
+  workspaceId: string;
   workspaceOwnerId: string;
   integrationConnectionId: string;
   externalMessageId: string;
@@ -516,14 +517,14 @@ async function applyIntegratedConversation(options: {
   participantLabel?: string;
   content: string;
 }) {
-  const preview = await parseInboxPreview(options.workspaceOwnerId, {
+  const preview = await parseInboxPreview(options.workspaceId, {
     source: options.source,
     subject: options.subject,
     participantLabel: options.participantLabel,
     content: options.content,
   });
 
-  return applyInboxPreview(options.workspaceOwnerId, {
+  return applyInboxPreview(options.workspaceId, options.workspaceOwnerId, {
     source: options.source,
     subject: options.subject,
     participantLabel: options.participantLabel,
@@ -592,6 +593,7 @@ export async function syncEmailConnection(connectionId: string) {
 
       if (!existing) {
         await applyIntegratedConversation({
+          workspaceId: connection.workspaceId,
           workspaceOwnerId: connection.workspace.ownerUserId,
           integrationConnectionId: connection.id,
           externalMessageId,
@@ -717,6 +719,7 @@ export async function ingestWhatsappWebhook(payload: WhatsappWebhookPayload) {
           change.value?.contacts?.find((contact) => contact.wa_id === message.from)?.profile?.name ?? message.from;
 
         await applyIntegratedConversation({
+          workspaceId: connection.workspaceId,
           workspaceOwnerId: connection.workspace.ownerUserId,
           integrationConnectionId: connection.id,
           externalMessageId: message.id,

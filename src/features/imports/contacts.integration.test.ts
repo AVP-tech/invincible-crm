@@ -7,12 +7,18 @@ const prisma = new PrismaClient();
 async function resetDatabase() {
   await prisma.activity.deleteMany();
   await prisma.conversationLog.deleteMany();
+  await prisma.backgroundJob.deleteMany();
   await prisma.note.deleteMany();
   await prisma.task.deleteMany();
+  await prisma.invoice.deleteMany();
   await prisma.deal.deleteMany();
   await prisma.contact.deleteMany();
   await prisma.company.deleteMany();
   await prisma.parsedCapture.deleteMany();
+  await prisma.automationRule.deleteMany();
+  await prisma.integrationConnection.deleteMany();
+  await prisma.workspaceMembership.deleteMany();
+  await prisma.workspace.deleteMany();
   await prisma.session.deleteMany();
   await prisma.user.deleteMany();
 }
@@ -35,10 +41,25 @@ describe("csv contact import", () => {
         passwordHash: "hashed"
       }
     });
+    const workspace = await prisma.workspace.create({
+      data: {
+        ownerUserId: user.id,
+        name: "Import Workspace"
+      }
+    });
+
+    await prisma.workspaceMembership.create({
+      data: {
+        workspaceId: workspace.id,
+        userId: user.id,
+        role: "OWNER"
+      }
+    });
 
     const company = await prisma.company.create({
       data: {
         userId: user.id,
+        workspaceId: workspace.id,
         name: "Northline Fitness"
       }
     });
@@ -46,6 +67,7 @@ describe("csv contact import", () => {
     await prisma.contact.create({
       data: {
         userId: user.id,
+        workspaceId: workspace.id,
         companyId: company.id,
         name: "Rahul Verma",
         email: "rahul@northline.example.com",
@@ -57,15 +79,15 @@ describe("csv contact import", () => {
     const csvText =
       'Name,Email,Phone,Company,Source,Tags\nRahul Verma,rahul@northline.example.com,+91 98765 44002,Northline Fitness,Instagram,"Follow-up;Operations"\nAisha Khan,aisha@newleaf.example.com,+91 98989 12345,Newleaf Studio,Referral,"Design;Warm"';
 
-    const preview = await previewCsvContactImport(user.id, csvText);
+    const preview = await previewCsvContactImport(workspace.id, csvText);
 
     expect(preview.summary.createCount).toBe(1);
     expect(preview.summary.updateCount).toBe(1);
 
-    const result = await applyCsvContactImport(user.id, preview);
+    const result = await applyCsvContactImport(workspace.id, user.id, preview);
     const contacts = await prisma.contact.findMany({
       where: {
-        userId: user.id
+        workspaceId: workspace.id
       },
       orderBy: {
         name: "asc"

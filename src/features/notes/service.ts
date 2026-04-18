@@ -2,11 +2,11 @@ import { ActivityType } from "@prisma/client";
 import { db } from "@/lib/db";
 import { logActivity } from "@/lib/activity";
 
-export async function addDealNote(userId: string, dealId: string, content: string) {
+export async function addDealNote(workspaceId: string, userId: string, dealId: string, content: string) {
   const deal = await db.deal.findFirst({
     where: {
       id: dealId,
-      userId
+      workspaceId
     }
   });
 
@@ -15,6 +15,7 @@ export async function addDealNote(userId: string, dealId: string, content: strin
   const note = await db.note.create({
     data: {
       userId,
+      workspaceId,
       dealId,
       contactId: deal.contactId ?? undefined,
       content,
@@ -24,6 +25,7 @@ export async function addDealNote(userId: string, dealId: string, content: strin
 
   await logActivity({
     userId,
+    workspaceId,
     type: ActivityType.NOTE_ADDED,
     title: "Note added",
     description: content,

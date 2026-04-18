@@ -2,7 +2,7 @@ import { DealStage, TaskStatus } from "@prisma/client";
 import { addDays, startOfDay } from "date-fns";
 import { db } from "@/lib/db";
 
-export async function getDashboardData(userId: string) {
+export async function getDashboardData(workspaceId: string) {
   const today = startOfDay(new Date());
   const weekAhead = addDays(today, 7);
 
@@ -10,24 +10,24 @@ export async function getDashboardData(userId: string) {
     await Promise.all([
       db.deal.count({
         where: {
-          userId,
+          workspaceId,
           stage: {
             notIn: [DealStage.WON, DealStage.LOST]
           }
         }
       }),
       db.contact.count({
-        where: { userId }
+        where: { workspaceId }
       }),
       db.task.count({
         where: {
-          userId,
+          workspaceId,
           status: TaskStatus.OPEN
         }
       }),
       db.task.findMany({
         where: {
-          userId,
+          workspaceId,
           status: TaskStatus.OPEN,
           dueDate: {
             gte: today,
@@ -45,7 +45,7 @@ export async function getDashboardData(userId: string) {
       }),
       db.task.findMany({
         where: {
-          userId,
+          workspaceId,
           status: TaskStatus.OPEN,
           dueDate: {
             gte: today,
@@ -62,7 +62,7 @@ export async function getDashboardData(userId: string) {
         take: 6
       }),
       db.activity.findMany({
-        where: { userId },
+        where: { workspaceId },
         orderBy: {
           createdAt: "desc"
         },
@@ -71,7 +71,7 @@ export async function getDashboardData(userId: string) {
       db.deal.groupBy({
         by: ["stage"],
         where: {
-          userId
+          workspaceId
         },
         _count: {
           stage: true
@@ -82,7 +82,7 @@ export async function getDashboardData(userId: string) {
       }),
       db.deal.findMany({
         where: {
-          userId,
+          workspaceId,
           stage: {
             in: [DealStage.PROPOSAL_SENT, DealStage.NEGOTIATION]
           },

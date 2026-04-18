@@ -9,7 +9,7 @@ import { PageHeader } from "@/components/ui/page-header";
 export default async function EditDealPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
   const { id } = await params;
-  const deal = await getDeal(user.id, id);
+  const deal = await getDeal(user.workspaceId, id);
 
   if (!deal) {
     notFound();
@@ -17,7 +17,7 @@ export default async function EditDealPage({ params }: { params: Promise<{ id: s
 
   const [contacts, members] = await Promise.all([
     db.contact.findMany({
-      where: { userId: user.id },
+      where: { workspaceId: user.workspaceId },
       select: { id: true, name: true },
       orderBy: { name: "asc" }
     }),

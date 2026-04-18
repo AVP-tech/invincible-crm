@@ -3,19 +3,20 @@ import { db } from "@/lib/db";
 import { logActivity } from "@/lib/activity";
 import { type ContactInput } from "@/lib/schemas";
 
-async function upsertCompany(userId: string, companyName?: string) {
+async function upsertCompany(workspaceId: string, userId: string, companyName?: string) {
   if (!companyName) return null;
 
   return db.company.upsert({
     where: {
-      userId_name: {
-        userId,
+      workspaceId_name: {
+        workspaceId,
         name: companyName
       }
     },
     update: {},
     create: {
       userId,
+      workspaceId,
       name: companyName
     }
   });
@@ -28,9 +29,9 @@ function parseTags(tagsText: string) {
     .filter(Boolean);
 }
 
-export async function listContacts(userId: string) {
+export async function listContacts(workspaceId: string) {
   return db.contact.findMany({
-    where: { userId },
+    where: { workspaceId },
     include: {
       company: true,
       deals: {
@@ -50,11 +51,11 @@ export async function listContacts(userId: string) {
   });
 }
 
-export async function getContact(userId: string, contactId: string) {
+export async function getContact(workspaceId: string, contactId: string) {
   return db.contact.findFirst({
     where: {
       id: contactId,
-      userId
+      workspaceId
     },
     include: {
       company: true,
@@ -89,12 +90,13 @@ export async function getContact(userId: string, contactId: string) {
   });
 }
 
-export async function createContact(userId: string, input: ContactInput) {
-  const company = await upsertCompany(userId, input.companyName);
+export async function createContact(workspaceId: string, userId: string, input: ContactInput) {
+  const company = await upsertCompany(workspaceId, userId, input.companyName);
 
   const contact = await db.contact.create({
     data: {
       userId,
+      workspaceId,
       companyId: company?.id,
       name: input.name,
       email: input.email,
@@ -109,6 +111,7 @@ export async function createContact(userId: string, input: ContactInput) {
 
   await logActivity({
     userId,
+    workspaceId,
     type: ActivityType.CONTACT_CREATED,
     title: `${contact.name} was added to contacts`,
     description: contact.source ? `Source: ${contact.source}` : undefined,
@@ -120,12 +123,26 @@ export async function createContact(userId: string, input: ContactInput) {
   return contact;
 }
 
-export async function updateContact(userId: string, contactId: string, input: ContactInput) {
-  const company = await upsertCompany(userId, input.companyName);
+export async function updateContact(workspaceId: string, userId: string, contactId: string, input: ContactInput) {
+  const company = await upsertCompany(workspaceId, userId, input.companyName);
+
+  const existing = await db.contact.findFirst({
+    where: {
+      id: contactId,
+      workspaceId
+    },
+    select: {
+      id: true
+    }
+  });
+
+  if (!existing) {
+    return null;
+  }
 
   const contact = await db.contact.update({
     where: {
-      id: contactId
+      id: existing.id
     },
     data: {
       name: input.name,
@@ -142,6 +159,7 @@ export async function updateContact(userId: string, contactId: string, input: Co
 
   await logActivity({
     userId,
+    workspaceId,
     type: ActivityType.CONTACT_UPDATED,
     title: `${contact.name} was updated`,
     entityType: "contact",
@@ -152,11 +170,11 @@ export async function updateContact(userId: string, contactId: string, input: Co
   return contact;
 }
 
-export async function deleteContact(userId: string, contactId: string) {
+export async function deleteContact(workspaceId: string, userId: string, contactId: string) {
   const existing = await db.contact.findFirst({
     where: {
       id: contactId,
-      userId
+      workspaceId
     }
   });
 
@@ -170,6 +188,7 @@ export async function deleteContact(userId: string, contactId: string) {
 
   await logActivity({
     userId,
+    workspaceId,
     type: ActivityType.CONTACT_DELETED,
     title: `${existing.name} was removed`,
     entityType: "contact",
@@ -179,11 +198,26 @@ export async function deleteContact(userId: string, contactId: string) {
   return existing;
 }
 
-export async function addContactNote(userId: string, contactId: string, content: string) {
+export async function addContactNote(workspaceId: string, userId: string, contactId: string, content: string) {
+  const contact = await db.contact.findFirst({
+    where: {
+      id: contactId,
+      workspaceId
+    },
+    select: {
+      id: true
+    }
+  });
+
+  if (!contact) {
+    return null;
+  }
+
   const note = await db.note.create({
     data: {
       userId,
-      contactId,
+      workspaceId,
+      contactId: contact.id,
       content,
       source: "manual"
     }
@@ -191,12 +225,13 @@ export async function addContactNote(userId: string, contactId: string, content:
 
   await logActivity({
     userId,
+    workspaceId,
     type: ActivityType.NOTE_ADDED,
     title: "Note added",
     description: content,
     entityType: "note",
     entityId: note.id,
-    contactId,
+    contactId: contact.id,
     noteId: note.id
   });
 

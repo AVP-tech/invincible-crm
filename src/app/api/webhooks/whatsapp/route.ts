@@ -1,4 +1,4 @@
-import { after, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import {
   findWhatsappIntegrationByPhoneNumberId,
 } from "@/features/integrations/service";
@@ -108,7 +108,7 @@ async function sendWhatsappMessage(senderPhone: string, replyText: string) {
   }
 }
 
-// Keep the existing downstream processing, but move it off the response path.
+// Keep the existing downstream processing for automation rules etc.
 async function enqueueWhatsappProcessing(payload: WhatsappWebhookPayload) {
   try {
     const queuedConnectionIds = new Set<string>();
@@ -144,9 +144,7 @@ async function enqueueWhatsappProcessing(payload: WhatsappWebhookPayload) {
 // Processing Webhooks (Meta pushes live message payloads here)
 export async function POST(request: Request) {
   const rawBody = await request.text();
-  logger.info("WhatsApp webhook received.", {
-    body: rawBody
-  });
+  logger.info("WhatsApp webhook received.", { body: rawBody });
 
   try {
     const payload = JSON.parse(rawBody) as WhatsappWebhookPayload;
@@ -167,16 +165,11 @@ export async function POST(request: Request) {
       externalMessageId: firstMessage?.id
     });
 
-    // Acknowledge Meta immediately, then process sequentially in background.
-    after(async () => {
-      // Always queue downstream CRM automation jobs.
-      void enqueueWhatsappProcessing(payload);
+    // Fire-and-forget background CRM automation jobs (non-blocking).
+    void enqueueWhatsappProcessing(payload);
 
-      if (!firstMessage?.from || !phoneNumberId) {
-        logger.info("WhatsApp AI flow skipped: no inbound message or phone number ID.", { senderPhone });
-        return;
-      }
-
+    // Only run the AI flow when there is an actual inbound message.
+    if (firstMessage?.from && phoneNumberId) {
       // Step 1: Save the inbound user message → get back the contactId.
       const crmResult = await saveWhatsappMessageToCrm({
         phoneNumberId,
@@ -190,40 +183,39 @@ export async function POST(request: Request) {
       const contactId = crmResult?.contactId;
 
       if (!contactId) {
-        logger.warn("WhatsApp CRM save failed. Skipping AI and sending fallback.", { senderPhone });
+        logger.warn("WhatsApp CRM save failed. Sending fallback reply.", { senderPhone });
       } else {
         // Step 2: Generate an AI reply using the contact's stored conversation history as memory.
         const aiReply = await generateConversationalReply(contactId, messageText);
         if (aiReply) {
-            replyText = aiReply;
+          replyText = aiReply;
+        } else {
+          logger.warn("WhatsApp AI returned null, using fallback reply.", { senderPhone, contactId });
         }
       }
 
       // Step 3: Send the reply over WhatsApp Cloud API.
       const sent = await sendWhatsappMessage(firstMessage.from, replyText);
 
-      if (!sent) {
-        logger.warn("WhatsApp AI reply could not be delivered.", { senderPhone, contactId });
-        return;
+      // Step 4: Persist the bot's reply so the bot remembers it next turn.
+      if (sent && contactId) {
+        const connection = await findWhatsappIntegrationByPhoneNumberId(phoneNumberId);
+        if (connection) {
+          await saveWhatsappBotReplyToCrm({
+            contactId,
+            workspaceId: connection.workspaceId,
+            ownerUserId: connection.workspace.ownerUserId,
+            replyText,
+            phoneNumberId,
+            senderPhone: firstMessage.from
+          });
+        }
       }
-
-      // Step 4: Persist the bot's reply as a Note so the bot remembers it next turn.
-      // We need the workspace & owner context — re-fetch via integration lookup.
-      const connection = await findWhatsappIntegrationByPhoneNumberId(phoneNumberId);
-
-      if (connection && contactId) {
-        await saveWhatsappBotReplyToCrm({
-          contactId,
-          workspaceId: connection.workspaceId,
-          ownerUserId: connection.workspace.ownerUserId,
-          replyText,
-          phoneNumberId,
-          senderPhone: firstMessage.from
-        });
-      }
-    });
+    } else {
+      logger.info("WhatsApp AI flow skipped: no inbound message or phone number ID.", { senderPhone });
+    }
   } catch (error) {
-    logger.warn("WhatsApp webhook received an invalid JSON payload, but the webhook was acknowledged.", {
+    logger.warn("WhatsApp webhook processing failed.", {
       error: error instanceof Error ? error.message : "Unknown error",
       body: rawBody
     });

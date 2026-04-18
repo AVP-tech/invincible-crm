@@ -68,7 +68,7 @@ const cardVariants = {
   show: (i: number) => ({
     opacity: 1,
     y: 0,
-    transition: { delay: i * 0.15, duration: 0.6, ease: [0.25, 1, 0.5, 1] },
+    transition: { delay: i * 0.15, duration: 0.6, ease: [0.25, 1, 0.5, 1] as const },
   }),
 };
 

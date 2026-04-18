@@ -25,8 +25,20 @@ export function CinematicIntro({ onComplete }: { onComplete: () => void }) {
 
   useEffect(() => {
     const t = setTimeout(() => setShowHint(true), 2000);
-    return () => clearTimeout(t);
-  }, []);
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        activate();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [activate]);
 
   const activate = useCallback(() => {
     if (triggered.current) return;
@@ -289,7 +301,7 @@ export function CinematicIntro({ onComplete }: { onComplete: () => void }) {
                   transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
                 />
                 <p className="text-xs font-semibold uppercase tracking-[0.4em]" style={{ color: "rgba(230,193,106,0.3)" }}>
-                  Click anywhere to awaken
+                  Click or press Enter to awaken
                 </p>
               </motion.div>
             )}

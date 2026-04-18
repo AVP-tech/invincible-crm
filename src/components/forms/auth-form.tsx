@@ -28,7 +28,7 @@ export function AuthForm({ mode }: AuthFormProps) {
     resolver: zodResolver(schema),
     defaultValues:
       mode === "login"
-        ? { email: "demo@invisiblecrm.local", password: "demo12345" }
+        ? { email: "", password: "" }
         : { name: "", email: "", password: "" }
   });
 
@@ -73,7 +73,16 @@ export function AuthForm({ mode }: AuthFormProps) {
       {fields.map((field, index) => (
         <div key={field.name} className="cinematic-auth-field space-y-2" style={{ animationDelay: `${index * 90}ms` }}>
           <label className="text-sm font-medium text-slate-700">{field.label}</label>
-          <Input placeholder={field.placeholder} type={field.type} {...form.register(field.name)} />
+          <Input
+            placeholder={field.placeholder}
+            type={field.type}
+            autoComplete={
+              field.name === "email" ? "email" :
+              field.name === "password" ? (mode === "login" ? "current-password" : "new-password") :
+              field.name === "name" ? "name" : "off"
+            }
+            {...form.register(field.name)}
+          />
           <p className="text-xs text-rose-600">{String(form.formState.errors[field.name]?.message ?? "")}</p>
         </div>
       ))}

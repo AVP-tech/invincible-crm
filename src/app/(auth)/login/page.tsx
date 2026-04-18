@@ -28,9 +28,6 @@ export default async function LoginPage() {
         </div>
       </CardHeader>
       <CardContent className="space-y-6 px-7 pb-7">
-        <div className="auth-hint-box rounded-[1.75rem] border border-gold/15 bg-gold/5 p-4 text-sm text-slate-600 dark:border-gold/10 dark:bg-gold/[0.03] dark:text-slate-400">
-          Demo login is prefilled for speed: <span className="font-semibold text-ink dark:text-gold">demo@invisiblecrm.local / demo12345</span>
-        </div>
         <AuthForm mode="login" />
         <p className="text-sm text-slate-500 dark:text-slate-400">
           New here?{" "}

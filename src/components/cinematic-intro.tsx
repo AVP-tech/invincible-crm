@@ -23,6 +23,15 @@ export function CinematicIntro({ onComplete }: { onComplete: () => void }) {
   const [showHint, setShowHint] = useState(false);
   const triggered = useRef(false);
 
+  const activate = useCallback(() => {
+    if (triggered.current) return;
+    triggered.current = true;
+    setShowHint(false);
+    setAnimating(true);
+    setTimeout(() => setVisible(false), 4500);
+    setTimeout(onComplete, 5400);
+  }, [onComplete]);
+
   useEffect(() => {
     const t = setTimeout(() => setShowHint(true), 2000);
 
@@ -39,15 +48,6 @@ export function CinematicIntro({ onComplete }: { onComplete: () => void }) {
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [activate]);
-
-  const activate = useCallback(() => {
-    if (triggered.current) return;
-    triggered.current = true;
-    setShowHint(false);
-    setAnimating(true);
-    setTimeout(() => setVisible(false), 4500);
-    setTimeout(onComplete, 5400);
-  }, [onComplete]);
 
   return (
     <AnimatePresence>

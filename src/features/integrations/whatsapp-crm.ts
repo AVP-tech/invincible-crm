@@ -205,3 +205,63 @@ export async function saveWhatsappMessageToCrm(input: SaveWhatsappMessageToCrmIn
     return null;
   }
 }
+
+type SaveWhatsappBotReplyInput = {
+  contactId: string;
+  workspaceId: string;
+  ownerUserId: string;
+  replyText: string;
+  phoneNumberId: string;
+  senderPhone: string;
+};
+
+/**
+ * Persists the bot's outgoing reply as a Note on the contact's timeline.
+ * This is what gives the bot its "memory" — on the next message turn, we
+ * read back notes with source "whatsapp_bot_reply" as assistant history.
+ */
+export async function saveWhatsappBotReplyToCrm(input: SaveWhatsappBotReplyInput) {
+  try {
+    const note = await db.note.create({
+      data: {
+        userId: input.ownerUserId,
+        workspaceId: input.workspaceId,
+        contactId: input.contactId,
+        content: input.replyText,
+        source: "whatsapp_bot_reply"
+      },
+      select: { id: true }
+    });
+
+    await logActivity({
+      userId: input.ownerUserId,
+      workspaceId: input.workspaceId,
+      type: ActivityType.NOTE_ADDED,
+      title: "Bot sent WhatsApp reply",
+      description: input.replyText,
+      entityType: "note",
+      entityId: note.id,
+      contactId: input.contactId,
+      noteId: note.id,
+      metadata: {
+        source: "WHATSAPP_BOT",
+        phoneNumberId: input.phoneNumberId,
+        senderPhone: input.senderPhone
+      }
+    });
+
+    logger.info("Bot reply saved to CRM.", {
+      contactId: input.contactId,
+      noteId: note.id
+    });
+
+    return { noteId: note.id };
+  } catch (error) {
+    logger.warn("WhatsApp bot reply CRM save failed.", {
+      contactId: input.contactId,
+      error: error instanceof Error ? error.message : "Unknown error"
+    });
+    return null;
+  }
+}
+

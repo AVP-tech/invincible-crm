@@ -2,7 +2,8 @@ import { after, NextResponse } from "next/server";
 import {
   findWhatsappIntegrationByPhoneNumberId,
 } from "@/features/integrations/service";
-import { saveWhatsappMessageToCrm } from "@/features/integrations/whatsapp-crm";
+import { saveWhatsappMessageToCrm, saveWhatsappBotReplyToCrm } from "@/features/integrations/whatsapp-crm";
+import { generateConversationalReply } from "@/features/integrations/whatsapp-ai";
 import { enqueueBackgroundJob } from "@/features/jobs/service";
 import { JobType, Prisma } from "@prisma/client";
 import { env } from "@/lib/env";
@@ -60,17 +61,17 @@ export async function GET(request: Request) {
   return plainTextResponse(challenge, 200);
 }
 
-async function sendWhatsappAutoReply(senderPhone: string) {
+async function sendWhatsappMessage(senderPhone: string, replyText: string) {
   const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
   const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
 
   if (!phoneNumberId || !accessToken) {
-    logger.warn("WhatsApp auto-reply skipped because Cloud API credentials are missing.", {
+    logger.warn("WhatsApp send skipped because Cloud API credentials are missing.", {
       senderPhone,
       hasPhoneNumberId: Boolean(phoneNumberId),
       hasAccessToken: Boolean(accessToken)
     });
-    return;
+    return false;
   }
 
   try {
@@ -83,29 +84,27 @@ async function sendWhatsappAutoReply(senderPhone: string) {
       body: JSON.stringify({
         messaging_product: "whatsapp",
         to: senderPhone,
-        text: {
-          body: "Hello from Invincible CRM 🚀"
-        }
+        text: { body: replyText }
       })
     });
 
     if (!response.ok) {
-      logger.warn("WhatsApp auto-reply failed.", {
+      logger.warn("WhatsApp message send failed.", {
         senderPhone,
         status: response.status,
         responseBody: await response.text()
       });
-      return;
+      return false;
     }
 
-    logger.info("Reply sent", {
-      senderPhone
-    });
+    logger.info("WhatsApp message sent.", { senderPhone });
+    return true;
   } catch (error) {
-    logger.warn("WhatsApp auto-reply request failed.", {
+    logger.warn("WhatsApp message send request failed.", {
       senderPhone,
       error: error instanceof Error ? error.message : "Unknown error"
     });
+    return false;
   }
 }
 
@@ -168,28 +167,58 @@ export async function POST(request: Request) {
       externalMessageId: firstMessage?.id
     });
 
-    // Acknowledge Meta immediately, then send the reply and queue follow-up work.
+    // Acknowledge Meta immediately, then process sequentially in background.
     after(async () => {
-      const backgroundTasks: Promise<unknown>[] = [enqueueWhatsappProcessing(payload)];
+      // Always queue downstream CRM automation jobs.
+      void enqueueWhatsappProcessing(payload);
 
-      if (firstMessage?.from) {
-        backgroundTasks.push(
-          saveWhatsappMessageToCrm({
-            phoneNumberId,
-            senderPhone: firstMessage.from,
-            messageText,
-            contactName,
-            receivedAt
-          })
-        );
-        backgroundTasks.push(sendWhatsappAutoReply(firstMessage.from));
-      } else {
-        logger.info("WhatsApp auto-reply skipped because no inbound message was available.", {
-          senderPhone
-        });
+      if (!firstMessage?.from || !phoneNumberId) {
+        logger.info("WhatsApp AI flow skipped: no inbound message or phone number ID.", { senderPhone });
+        return;
       }
 
-      await Promise.allSettled(backgroundTasks);
+      // Step 1: Save the inbound user message → get back the contactId.
+      const crmResult = await saveWhatsappMessageToCrm({
+        phoneNumberId,
+        senderPhone: firstMessage.from,
+        messageText,
+        contactName,
+        receivedAt
+      });
+
+      if (!crmResult?.contactId) {
+        logger.warn("WhatsApp AI flow aborted: could not save message to CRM.", { senderPhone });
+        return;
+      }
+
+      const { contactId } = crmResult;
+
+      // Step 2: Generate an AI reply using the contact's stored conversation history as memory.
+      const aiReply = await generateConversationalReply(contactId, messageText);
+      const replyText = aiReply ?? "Thanks for reaching out! We'll get back to you shortly. 🙏";
+
+      // Step 3: Send the reply over WhatsApp Cloud API.
+      const sent = await sendWhatsappMessage(firstMessage.from, replyText);
+
+      if (!sent) {
+        logger.warn("WhatsApp AI reply could not be delivered.", { senderPhone, contactId });
+        return;
+      }
+
+      // Step 4: Persist the bot's reply as a Note so the bot remembers it next turn.
+      // We need the workspace & owner context — re-fetch via integration lookup.
+      const connection = await findWhatsappIntegrationByPhoneNumberId(phoneNumberId);
+
+      if (connection) {
+        await saveWhatsappBotReplyToCrm({
+          contactId,
+          workspaceId: connection.workspaceId,
+          ownerUserId: connection.workspace.ownerUserId,
+          replyText,
+          phoneNumberId,
+          senderPhone: firstMessage.from
+        });
+      }
     });
   } catch (error) {
     logger.warn("WhatsApp webhook received an invalid JSON payload, but the webhook was acknowledged.", {

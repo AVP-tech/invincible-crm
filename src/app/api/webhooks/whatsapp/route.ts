@@ -211,7 +211,7 @@ export async function POST(request: Request) {
       // We need the workspace & owner context — re-fetch via integration lookup.
       const connection = await findWhatsappIntegrationByPhoneNumberId(phoneNumberId);
 
-      if (connection) {
+      if (connection && contactId) {
         await saveWhatsappBotReplyToCrm({
           contactId,
           workspaceId: connection.workspaceId,

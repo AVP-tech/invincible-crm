@@ -186,16 +186,18 @@ export async function POST(request: Request) {
         receivedAt
       });
 
-      if (!crmResult?.contactId) {
-        logger.warn("WhatsApp AI flow aborted: could not save message to CRM.", { senderPhone });
-        return;
+      let replyText = "Thanks for reaching out! We'll get back to you shortly. 🙏";
+      const contactId = crmResult?.contactId;
+
+      if (!contactId) {
+        logger.warn("WhatsApp CRM save failed. Skipping AI and sending fallback.", { senderPhone });
+      } else {
+        // Step 2: Generate an AI reply using the contact's stored conversation history as memory.
+        const aiReply = await generateConversationalReply(contactId, messageText);
+        if (aiReply) {
+            replyText = aiReply;
+        }
       }
-
-      const { contactId } = crmResult;
-
-      // Step 2: Generate an AI reply using the contact's stored conversation history as memory.
-      const aiReply = await generateConversationalReply(contactId, messageText);
-      const replyText = aiReply ?? "Thanks for reaching out! We'll get back to you shortly. 🙏";
 
       // Step 3: Send the reply over WhatsApp Cloud API.
       const sent = await sendWhatsappMessage(firstMessage.from, replyText);

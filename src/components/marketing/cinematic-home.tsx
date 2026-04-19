@@ -170,11 +170,11 @@ export function CinematicHome({ user }: { user: HomeUser }) {
   return (
     <>
       {/* ━━━ Cinematic Intro Overlay ━━━ */}
-      <CinematicIntro onComplete={() => setIntroComplete(true)} />
+      {!introComplete && <CinematicIntro onComplete={() => setIntroComplete(true)} />}
 
       {/* ━━━ Main Landing Page ━━━ */}
       <motion.main
-        className="relative min-h-screen bg-[#03060d] text-white"
+        className="relative min-h-screen overflow-x-clip bg-[#03060d] text-white"
         initial={{ opacity: 0 }}
         animate={introComplete ? { opacity: 1 } : { opacity: 0 }}
         transition={{ duration: 1, ease: "easeOut" }}
@@ -189,7 +189,7 @@ export function CinematicHome({ user }: { user: HomeUser }) {
         </div>
 
         <motion.div
-          className="relative z-10 mx-auto flex max-w-7xl flex-col px-5 py-6 lg:px-8 lg:py-8"
+          className="relative z-10 mx-auto flex w-full max-w-7xl flex-col px-5 py-6 lg:px-8 lg:py-8"
           variants={containerVariants}
           initial="hidden"
           animate={isBooted ? "show" : "hidden"}
@@ -230,7 +230,7 @@ export function CinematicHome({ user }: { user: HomeUser }) {
           </motion.header>
 
           {/* ── Hero Grid ── */}
-          <div className="grid flex-1 items-center gap-10 py-10 lg:grid-cols-[1.08fr_0.92fr] lg:py-14">
+          <div className="grid min-h-[calc(100vh-7rem)] items-center gap-10 py-10 lg:grid-cols-[1.08fr_0.92fr] lg:py-14">
             <section className="max-w-3xl">
               <motion.p className="cinematic-label text-gold/60" variants={itemVariants}>
                 AI-powered command center

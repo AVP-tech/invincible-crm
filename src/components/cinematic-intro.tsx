@@ -22,18 +22,22 @@ export function CinematicIntro({ onComplete }: { onComplete: () => void }) {
   const [visible, setVisible] = useState(true);
   const [showHint, setShowHint] = useState(false);
   const triggered = useRef(false);
+  const autoActivateTimeoutRef = useRef<number | null>(null);
+  const hideTimeoutRef = useRef<number | null>(null);
+  const completeTimeoutRef = useRef<number | null>(null);
 
   const activate = useCallback(() => {
     if (triggered.current) return;
     triggered.current = true;
     setShowHint(false);
     setAnimating(true);
-    setTimeout(() => setVisible(false), 4500);
-    setTimeout(onComplete, 5400);
+    completeTimeoutRef.current = window.setTimeout(onComplete, 900);
+    hideTimeoutRef.current = window.setTimeout(() => setVisible(false), 2200);
   }, [onComplete]);
 
   useEffect(() => {
-    const t = setTimeout(() => setShowHint(true), 2000);
+    const hintTimeout = window.setTimeout(() => setShowHint(true), 1600);
+    autoActivateTimeoutRef.current = window.setTimeout(() => activate(), 3200);
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Enter" || e.key === " ") {
@@ -44,7 +48,16 @@ export function CinematicIntro({ onComplete }: { onComplete: () => void }) {
     window.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      clearTimeout(t);
+      window.clearTimeout(hintTimeout);
+      if (autoActivateTimeoutRef.current) {
+        window.clearTimeout(autoActivateTimeoutRef.current);
+      }
+      if (hideTimeoutRef.current) {
+        window.clearTimeout(hideTimeoutRef.current);
+      }
+      if (completeTimeoutRef.current) {
+        window.clearTimeout(completeTimeoutRef.current);
+      }
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [activate]);
@@ -54,7 +67,7 @@ export function CinematicIntro({ onComplete }: { onComplete: () => void }) {
       {visible && (
         <motion.div
           key="cinematic-intro"
-          className="fixed inset-0 z-[10000] flex select-none items-center justify-center overflow-hidden bg-black"
+          className={`fixed inset-0 z-[10000] flex select-none items-center justify-center overflow-hidden bg-black ${animating ? "pointer-events-none" : ""}`}
           onClick={activate}
           style={{ cursor: !animating ? "pointer" : "default" }}
           exit={{ opacity: 0, scale: 1.15, filter: "blur(30px)" }}

@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { DealStage, TaskPriority, TaskRecurrencePattern } from "@prisma/client";
-import { CheckCircle2, Info, Loader2, Sparkles } from "lucide-react";
+import { CheckCircle2, Info, Loader2, Sparkles, Mic, MicOff } from "lucide-react";
 import { toast } from "sonner";
 import { CometBorder } from "@/components/comet-border";
 import { Button } from "@/components/ui/button";
@@ -140,6 +140,58 @@ export function CaptureForm({ defaultInput = "" }: CaptureFormProps) {
   const saveBlocked = Boolean(blockedSaveReason) || isApplying || !preview;
   const confidenceMeta = preview ? getConfidenceMeta(preview.confidence) : null;
 
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      if (SpeechRecognitionAPI) {
+        const recognition = new SpeechRecognitionAPI();
+        recognition.continuous = true;
+        recognition.interimResults = false;
+
+        recognition.onstart = () => setIsListening(true);
+        recognition.onend = () => setIsListening(false);
+        recognition.onerror = (e: any) => {
+          setIsListening(false);
+          if (e.error === "not-allowed") {
+            toast.error("Microphone access denied.");
+          } else {
+            console.error("Speech recognition error", e.error);
+          }
+        };
+        recognition.onresult = (e: any) => {
+          const latestTranscript = e.results[e.results.length - 1][0].transcript;
+          setInput((prev) => (prev + " " + latestTranscript).trim());
+        };
+        recognitionRef.current = recognition;
+      }
+    }
+
+    return () => {
+      if (recognitionRef.current) {
+        try { recognitionRef.current.stop(); } catch(e){}
+      }
+    };
+  }, []);
+
+  const toggleListening = () => {
+    if (!recognitionRef.current) {
+      toast.error("Microphone is not supported on this browser. Please use Chrome, Edge, or Safari.");
+      return;
+    }
+    if (isListening) {
+      recognitionRef.current.stop();
+    } else {
+      try {
+        recognitionRef.current.start();
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  };
+
   useEffect(() => {
     if (!savedSummary) {
       return;
@@ -254,7 +306,16 @@ export function CaptureForm({ defaultInput = "" }: CaptureFormProps) {
                 Generate preview
               </Button>
 
-              <Button variant="secondary" onClick={() => setInput("Called Priya, she's interested, send proposal by Friday")}>
+              <Button
+                variant={isListening ? "primary" : "secondary"}
+                onClick={toggleListening}
+                className={isListening ? "animate-pulse bg-gold/20 text-gold-foreground border border-gold hover:bg-gold/30 shadow-[0_0_15px_rgba(230,193,106,0.3)] transition-all" : ""}
+              >
+                {isListening ? <Mic className="mr-2 h-4 w-4 animate-pulse" style={{ color: "#E6C16A" }} /> : <Mic className="mr-2 h-4 w-4" />}
+                {isListening ? "Recording..." : "Dictate"}
+              </Button>
+
+              <Button variant="ghost" onClick={() => setInput("Called Priya, she's interested, send proposal by Friday")}>
                 Try sample
               </Button>
             </div>

@@ -229,8 +229,10 @@ export function CinematicHome({ user }: { user: HomeUser }) {
             </div>
           </motion.header>
 
-          {/* ── Hero Grid ── */}
-          <div className="grid min-h-[calc(100vh-7rem)] items-center gap-10 py-10 lg:grid-cols-[1.08fr_0.92fr] lg:py-14">
+          {/* ═══════════════════════════════════════════════ */}
+          {/* SECTION 1 — Hero (compact, no full viewport)   */}
+          {/* ═══════════════════════════════════════════════ */}
+          <div className="grid items-center gap-10 py-10 lg:grid-cols-[1.08fr_0.92fr] lg:py-14">
             <section className="max-w-3xl">
               <motion.p className="cinematic-label text-gold/60" variants={itemVariants}>
                 AI-powered command center
@@ -290,58 +292,13 @@ export function CinematicHome({ user }: { user: HomeUser }) {
                   Enter the workspace
                   <ArrowRight className="h-4 w-4" />
                 </Link>
-              </motion.div>
-
-              {/* Action Cards — with TiltCard */}
-              <motion.div className="mt-10" variants={itemVariants}>
-                <p className="cinematic-label text-gold/40">Next move</p>
-                <div className="mt-3">
-                  <h2 className="font-serif text-4xl leading-tight text-white lg:text-5xl">
-                    What&apos;s your next move?
-                  </h2>
-                  <p className="mt-3 max-w-2xl text-base leading-7 text-white/65">
-                    Choose your intent. Invincible CRM routes you to the right place instantly —
-                    no menus, no friction, no back-office feel.
-                  </p>
-                </div>
-
-                <motion.div
-                  className="mt-8 grid gap-4 sm:grid-cols-2"
-                  variants={containerVariants}
-                  initial="hidden"
-                  animate={isBooted ? "show" : "hidden"}
+                <Link
+                  href="#pricing"
+                  className="inline-flex items-center gap-2 rounded-full border border-gold/15 bg-gold/[0.06] px-5 py-3 text-sm font-semibold text-gold/90 backdrop-blur-xl transition hover:border-gold/25 hover:bg-gold/[0.1]"
                 >
-                  {actionCards.map((action) => {
-                    const Icon = action.icon;
-                    return (
-                      <motion.div key={action.title} variants={itemVariants}>
-                        <TiltCard
-                          className="cinematic-action-card cinematic-action-card-visible"
-                          tiltIntensity={6}
-                          glareOpacity={0.1}
-                        >
-                          <Link
-                            href={action.href}
-                            className="group block"
-                          >
-                            <div className="flex items-start justify-between gap-4">
-                              <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-gold/15 bg-gold/10 text-gold">
-                                <Icon className="h-5 w-5" />
-                              </div>
-                              <ArrowRight className="h-5 w-5 text-white/40 transition duration-300 group-hover:text-gold" />
-                            </div>
-                            <div className="mt-7">
-                              <p className="text-xl font-semibold text-white">{action.title}</p>
-                              <p className="mt-2 text-sm leading-6 text-white/62">
-                                {action.description}
-                              </p>
-                            </div>
-                          </Link>
-                        </TiltCard>
-                      </motion.div>
-                    );
-                  })}
-                </motion.div>
+                  View pricing
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
               </motion.div>
             </section>
 
@@ -401,13 +358,20 @@ export function CinematicHome({ user }: { user: HomeUser }) {
                     </motion.div>
                   ))}
                 </div>
-
-  
               </div>
             </motion.aside>
           </div>
 
-          {/* ── Scroll Section: Why Invincible ── */}
+          {/* ═══════════════════════════════════════════════ */}
+          {/* SECTION 2 — Pricing (appears early!)          */}
+          {/* ═══════════════════════════════════════════════ */}
+          <div id="pricing">
+            <PricingSection />
+          </div>
+
+          {/* ═══════════════════════════════════════════════ */}
+          {/* SECTION 3 — Why Invincible                     */}
+          {/* ═══════════════════════════════════════════════ */}
           <ScrollReveal variant="fade-up" className="py-20">
             <div className="mx-auto max-w-4xl text-center">
               <p className="cinematic-label text-gold/50">Why Invincible?</p>
@@ -421,11 +385,10 @@ export function CinematicHome({ user }: { user: HomeUser }) {
             </div>
           </ScrollReveal>
 
-          {/* ── Pricing Section ── */}
-          <PricingSection />
-
-          {/* ── Feature Grid ── */}
-          <div className="grid gap-6 pb-20 md:grid-cols-3">
+          {/* ═══════════════════════════════════════════════ */}
+          {/* SECTION 4 — Feature Grid                       */}
+          {/* ═══════════════════════════════════════════════ */}
+          <div className="grid gap-6 pb-16 md:grid-cols-3">
             {[
               { title: "Natural Language Input", desc: "Type one sentence and watch AI structure your contacts, deals, and follow-ups automatically.", icon: "🧠", delay: 0 },
               { title: "Smart Follow-ups", desc: "Never miss a follow-up. Recurring tasks, reminders, and activity history keep every deal alive.", icon: "⚡", delay: 0.1 },
@@ -443,6 +406,54 @@ export function CinematicHome({ user }: { user: HomeUser }) {
               </ScrollReveal>
             ))}
           </div>
+
+          {/* ═══════════════════════════════════════════════ */}
+          {/* SECTION 5 — What's Your Next Move (bottom)     */}
+          {/* ═══════════════════════════════════════════════ */}
+          <ScrollReveal variant="fade-up" className="pb-20">
+            <div className="mb-8">
+              <p className="cinematic-label text-gold/40">Next move</p>
+              <h2 className="mt-3 font-serif text-4xl leading-tight text-white lg:text-5xl">
+                What&apos;s your next move?
+              </h2>
+              <p className="mt-3 max-w-2xl text-base leading-7 text-white/65">
+                Choose your intent. Invincible CRM routes you to the right place instantly —
+                no menus, no friction, no back-office feel.
+              </p>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {actionCards.map((action) => {
+                const Icon = action.icon;
+                return (
+                  <TiltCard
+                    key={action.title}
+                    className="cinematic-action-card cinematic-action-card-visible"
+                    tiltIntensity={6}
+                    glareOpacity={0.1}
+                  >
+                    <Link
+                      href={action.href}
+                      className="group block"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-gold/15 bg-gold/10 text-gold">
+                          <Icon className="h-5 w-5" />
+                        </div>
+                        <ArrowRight className="h-5 w-5 text-white/40 transition duration-300 group-hover:text-gold" />
+                      </div>
+                      <div className="mt-7">
+                        <p className="text-xl font-semibold text-white">{action.title}</p>
+                        <p className="mt-2 text-sm leading-6 text-white/62">
+                          {action.description}
+                        </p>
+                      </div>
+                    </Link>
+                  </TiltCard>
+                );
+              })}
+            </div>
+          </ScrollReveal>
         </motion.div>
       </motion.main>
     </>

@@ -18,7 +18,6 @@ import { cn } from "@/lib/utils";
 import { CinematicIntro } from "@/components/cinematic-intro";
 import { TiltCard } from "@/components/tilt-card";
 import { ScrollReveal } from "@/components/scroll-reveal";
-import { PricingSection } from "@/components/marketing/pricing-section";
 
 type HomeUser = {
   name: string;
@@ -292,13 +291,6 @@ export function CinematicHome({ user }: { user: HomeUser }) {
                   Enter the workspace
                   <ArrowRight className="h-4 w-4" />
                 </Link>
-                <Link
-                  href="#pricing"
-                  className="inline-flex items-center gap-2 rounded-full border border-gold/15 bg-gold/[0.06] px-5 py-3 text-sm font-semibold text-gold/90 backdrop-blur-xl transition hover:border-gold/25 hover:bg-gold/[0.1]"
-                >
-                  View pricing
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </Link>
               </motion.div>
             </section>
 
@@ -363,14 +355,7 @@ export function CinematicHome({ user }: { user: HomeUser }) {
           </div>
 
           {/* ═══════════════════════════════════════════════ */}
-          {/* SECTION 2 — Pricing (appears early!)          */}
-          {/* ═══════════════════════════════════════════════ */}
-          <div id="pricing">
-            <PricingSection />
-          </div>
-
-          {/* ═══════════════════════════════════════════════ */}
-          {/* SECTION 3 — Why Invincible                     */}
+          {/* SECTION 2 — Why Invincible                     */}
           {/* ═══════════════════════════════════════════════ */}
           <ScrollReveal variant="fade-up" className="py-20">
             <div className="mx-auto max-w-4xl text-center">

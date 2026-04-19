@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import type { Route } from "next";
-import { Sparkles, LayoutDashboard, Users, KanbanSquare, CheckSquare, Search, Settings, BellRing, Upload, MessageSquareMore, PlugZap, ReceiptText, Bot, BookOpen } from "lucide-react";
+import { Sparkles, LayoutDashboard, Users, KanbanSquare, CheckSquare, Search, Settings, BellRing, Upload, MessageSquareMore, PlugZap, ReceiptText, Bot, BookOpen, HelpCircle } from "lucide-react";
 
 type NavSection = {
   label: string;
@@ -40,6 +40,7 @@ const navSections: NavSection[] = [
       { href: "/imports" as Route, label: "Imports", icon: Upload },
       { href: "/search" as Route, label: "Search", icon: Search },
       { href: "/settings" as Route, label: "Settings", icon: Settings },
+      { href: "/help" as Route, label: "Help & Support", icon: HelpCircle },
     ],
   },
 ];

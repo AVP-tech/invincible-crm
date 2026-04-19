@@ -85,6 +85,11 @@ export function AppShell({ user, children }: AppShellProps) {
                   className="w-60 bg-transparent text-sm text-ink outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500"
                 />
               </form>
+              <Link href="/upgrade">
+                <Button variant="secondary" className="w-full sm:w-auto border-gold/20 text-gold hover:bg-gold/10 hover:text-gold dark:border-gold/30 dark:hover:bg-gold/20">
+                  Upgrade
+                </Button>
+              </Link>
               <Link href="/capture">
                 <Button className="w-full sm:w-auto">
                   <Sparkles className="mr-2 h-4 w-4" />

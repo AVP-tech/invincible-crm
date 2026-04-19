@@ -68,7 +68,7 @@ export default function BookDemoPage() {
         body: JSON.stringify({
           name: formData.get("name"),
           business: formData.get("business"),
-          phone: formData.get("phone"),
+          phone: `${formData.get("countryCode") || ""} ${formData.get("phone") || ""}`.trim(),
           email: formData.get("email"),
           challenge: formData.get("challenge"),
         }),
@@ -297,14 +297,28 @@ export default function BookDemoPage() {
                         <label className="text-sm font-medium text-white/80">
                           WhatsApp Number
                         </label>
-                        <input
-                          required
-                          name="phone"
-                          type="tel"
-                          placeholder="+91 98765 43210"
-                          autoComplete="tel"
-                          className="w-full rounded-xl border border-white/15 bg-white/[0.06] px-4 py-3 text-sm text-white placeholder-white/30 outline-none transition focus:border-gold/40 focus:bg-gold/[0.04] focus:ring-1 focus:ring-gold/20"
-                        />
+                        <div className="flex gap-2">
+                          <select
+                            name="countryCode"
+                            required
+                            defaultValue="+91"
+                            className="w-24 rounded-xl border border-white/15 bg-black/40 px-2 py-3 text-sm text-white outline-none transition focus:border-gold/40 focus:ring-1 focus:ring-gold/20"
+                          >
+                            <option value="+91">IN (+91)</option>
+                            <option value="+1">US (+1)</option>
+                            <option value="+44">UK (+44)</option>
+                            <option value="+61">AU (+61)</option>
+                            <option value="+971">UAE (+971)</option>
+                          </select>
+                          <input
+                            required
+                            name="phone"
+                            type="tel"
+                            placeholder="98765 43210"
+                            autoComplete="tel"
+                            className="flex-1 rounded-xl border border-white/15 bg-white/[0.06] px-4 py-3 text-sm text-white placeholder-white/30 outline-none transition focus:border-gold/40 focus:bg-gold/[0.04] focus:ring-1 focus:ring-gold/20"
+                          />
+                        </div>
                       </div>
 
                       <div className="space-y-2">

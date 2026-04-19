@@ -37,7 +37,6 @@ export function CinematicIntro({ onComplete }: { onComplete: () => void }) {
 
   useEffect(() => {
     const hintTimeout = window.setTimeout(() => setShowHint(true), 1600);
-    autoActivateTimeoutRef.current = window.setTimeout(() => activate(), 4500);
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Enter" || e.key === " ") {
@@ -49,9 +48,6 @@ export function CinematicIntro({ onComplete }: { onComplete: () => void }) {
 
     return () => {
       window.clearTimeout(hintTimeout);
-      if (autoActivateTimeoutRef.current) {
-        window.clearTimeout(autoActivateTimeoutRef.current);
-      }
       if (hideTimeoutRef.current) {
         window.clearTimeout(hideTimeoutRef.current);
       }

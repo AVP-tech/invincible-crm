@@ -24,6 +24,35 @@ export async function POST(request: Request) {
       },
     });
 
+    // Send Discord notification if webhook URL exists
+    const discordWebhookUrl = process.env.DISCORD_WEBHOOK_URL;
+    if (discordWebhookUrl) {
+      try {
+        await fetch(discordWebhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            embeds: [
+              {
+                title: "🎉 New Demo Booking!",
+                color: 15122730, // Invincible Gold
+                fields: [
+                  { name: "Name", value: booking.name, inline: true },
+                  { name: "Business", value: booking.business, inline: true },
+                  { name: "Email", value: booking.email, inline: true },
+                  { name: "Phone", value: booking.phone, inline: true },
+                  { name: "Challenge", value: booking.challenge || "N/A" },
+                ],
+                timestamp: new Date().toISOString(),
+              },
+            ],
+          }),
+        });
+      } catch (err) {
+        console.error("[book-demo] Failed to send Discord notification:", err);
+      }
+    }
+
     return NextResponse.json({ success: true, id: booking.id }, { status: 201 });
   } catch (error) {
     console.error("[book-demo] Failed to save booking:", error);

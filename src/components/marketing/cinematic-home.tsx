@@ -174,7 +174,7 @@ export function CinematicHome({ user }: { user: HomeUser }) {
 
       {/* ━━━ Main Landing Page ━━━ */}
       <motion.main
-        className="relative min-h-screen overflow-hidden bg-[#03060d] text-white"
+        className="relative min-h-screen bg-[#03060d] text-white"
         initial={{ opacity: 0 }}
         animate={introComplete ? { opacity: 1 } : { opacity: 0 }}
         transition={{ duration: 1, ease: "easeOut" }}
@@ -189,7 +189,7 @@ export function CinematicHome({ user }: { user: HomeUser }) {
         </div>
 
         <motion.div
-          className="relative z-10 mx-auto flex min-h-screen max-w-7xl flex-col px-5 py-6 lg:px-8 lg:py-8"
+          className="relative z-10 mx-auto flex max-w-7xl flex-col px-5 py-6 lg:px-8 lg:py-8"
           variants={containerVariants}
           initial="hidden"
           animate={isBooted ? "show" : "hidden"}

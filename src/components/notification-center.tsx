@@ -15,44 +15,11 @@ type Notification = {
   read: boolean;
 };
 
-const SAMPLE_NOTIFICATIONS: Notification[] = [
-  {
-    id: "1",
-    icon: CheckCircle2,
-    iconColor: "text-moss bg-moss/10",
-    title: "Task completed",
-    description: "Follow-up with Raj Mehta was marked done.",
-    time: "2m ago",
-    read: false,
-  },
-  {
-    id: "2",
-    icon: KanbanSquare,
-    iconColor: "text-ember bg-ember/10",
-    title: "Deal stage updated",
-    description: "\"Acme Corp\" moved to Proposal stage.",
-    time: "18m ago",
-    read: false,
-  },
-  {
-    id: "3",
-    icon: MessageSquare,
-    iconColor: "text-blue-500 bg-blue-500/10",
-    title: "New inbox message",
-    description: "Sarah replied to your email thread.",
-    time: "1h ago",
-    read: true,
-  },
-  {
-    id: "4",
-    icon: User2,
-    iconColor: "text-gold bg-gold/10",
-    title: "Contact added",
-    description: "AI Capture created a new contact: Priya Singh.",
-    time: "3h ago",
-    read: true,
-  },
-];
+/** 
+ * Start with an empty list — real notifications will be fetched from the
+ * backend once the notifications API is wired up.
+ */
+const INITIAL_NOTIFICATIONS: Notification[] = [];
 
 const PANEL_WIDTH = 380;
 const VIEWPORT_GUTTER = 16;
@@ -60,7 +27,7 @@ const VIEWPORT_GUTTER = 16;
 export function NotificationCenter() {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [notifications, setNotifications] = useState(SAMPLE_NOTIFICATIONS);
+  const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
   const [panelPosition, setPanelPosition] = useState({ top: 0, left: 0, width: PANEL_WIDTH });
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelId = useId();

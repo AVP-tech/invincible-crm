@@ -31,13 +31,13 @@ export function CinematicIntro({ onComplete }: { onComplete: () => void }) {
     triggered.current = true;
     setShowHint(false);
     setAnimating(true);
-    completeTimeoutRef.current = window.setTimeout(onComplete, 900);
-    hideTimeoutRef.current = window.setTimeout(() => setVisible(false), 2200);
+    completeTimeoutRef.current = window.setTimeout(onComplete, 3800);
+    hideTimeoutRef.current = window.setTimeout(() => setVisible(false), 4500);
   }, [onComplete]);
 
   useEffect(() => {
     const hintTimeout = window.setTimeout(() => setShowHint(true), 1600);
-    autoActivateTimeoutRef.current = window.setTimeout(() => activate(), 3200);
+    autoActivateTimeoutRef.current = window.setTimeout(() => activate(), 4500);
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Enter" || e.key === " ") {

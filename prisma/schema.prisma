@@ -491,3 +491,15 @@ model ConversationLog {
   @@index([integrationConnectionId, createdAt])
   @@unique([integrationConnectionId, externalMessageId])
 }
+
+model DemoBooking {
+  id          String   @id @default(cuid())
+  name        String
+  business    String
+  phone       String
+  email       String
+  challenge   String?
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+}

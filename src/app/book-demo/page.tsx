@@ -51,16 +51,40 @@ const steps = [
 export default function BookDemoPage() {
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setError(null);
 
-    // Simulate a small delay for the animation
-    await new Promise((r) => setTimeout(r, 1200));
+    const form = e.currentTarget;
+    const formData = new FormData(form);
 
-    setIsSubmitting(false);
-    setSubmitted(true);
+    try {
+      const res = await fetch("/api/book-demo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: formData.get("name"),
+          business: formData.get("business"),
+          phone: formData.get("phone"),
+          email: formData.get("email"),
+          challenge: formData.get("challenge"),
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Something went wrong.");
+      }
+
+      setSubmitted(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -246,6 +270,7 @@ export default function BookDemoPage() {
                       </label>
                       <input
                         required
+                        name="name"
                         type="text"
                         placeholder="e.g. Rahul Mehra"
                         autoComplete="name"
@@ -259,6 +284,7 @@ export default function BookDemoPage() {
                       </label>
                       <input
                         required
+                        name="business"
                         type="text"
                         placeholder="e.g. BrightPath Studio"
                         autoComplete="organization"
@@ -273,6 +299,7 @@ export default function BookDemoPage() {
                         </label>
                         <input
                           required
+                          name="phone"
                           type="tel"
                           placeholder="+91 98765 43210"
                           autoComplete="tel"
@@ -286,6 +313,7 @@ export default function BookDemoPage() {
                         </label>
                         <input
                           required
+                          name="email"
                           type="email"
                           placeholder="you@company.com"
                           autoComplete="email"
@@ -299,6 +327,7 @@ export default function BookDemoPage() {
                         What&apos;s your biggest challenge right now?
                       </label>
                       <textarea
+                        name="challenge"
                         rows={3}
                         placeholder="e.g. I want to automate my WhatsApp replies and manage my leads in one place..."
                         className="w-full resize-none rounded-xl border border-white/15 bg-white/[0.06] px-4 py-3 text-sm text-white placeholder-white/30 outline-none transition focus:border-gold/40 focus:bg-gold/[0.04] focus:ring-1 focus:ring-gold/20"
@@ -332,6 +361,12 @@ export default function BookDemoPage() {
                         </>
                       )}
                     </motion.button>
+
+                    {error && (
+                      <p className="text-center text-sm font-medium text-rose-400">
+                        {error}
+                      </p>
+                    )}
 
                     <p className="text-center text-xs text-white/35">
                       No payment required. No spam. Just a quick call to get you

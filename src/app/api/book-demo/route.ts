@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/lib/db";
 
 export async function POST(request: Request) {
   try {
@@ -14,7 +14,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const booking = await prisma.demoBooking.create({
+    const booking = await db.demoBooking.create({
       data: {
         name: name.trim(),
         business: business.trim(),
@@ -37,7 +37,7 @@ export async function POST(request: Request) {
 // GET: List all bookings (admin only — requires auth)
 export async function GET() {
   try {
-    const bookings = await prisma.demoBooking.findMany({
+    const bookings = await db.demoBooking.findMany({
       orderBy: { createdAt: "desc" },
       take: 50,
     });

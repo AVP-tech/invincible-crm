@@ -141,54 +141,69 @@ export function CaptureForm({ defaultInput = "" }: CaptureFormProps) {
   const confidenceMeta = preview ? getConfidenceMeta(preview.confidence) : null;
 
   const [isListening, setIsListening] = useState(false);
-  const recognitionRef = useRef<any>(null);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<BlobPart[]>([]);
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      if (SpeechRecognitionAPI) {
-        const recognition = new SpeechRecognitionAPI();
-        recognition.continuous = true;
-        recognition.interimResults = false;
-
-        recognition.onstart = () => setIsListening(true);
-        recognition.onend = () => setIsListening(false);
-        recognition.onerror = (e: any) => {
-          setIsListening(false);
-          if (e.error === "not-allowed") {
-            toast.error("Microphone access denied.");
-          } else {
-            console.error("Speech recognition error", e.error);
-          }
-        };
-        recognition.onresult = (e: any) => {
-          const latestTranscript = e.results[e.results.length - 1][0].transcript;
-          setInput((prev) => (prev + " " + latestTranscript).trim());
-        };
-        recognitionRef.current = recognition;
+  const toggleListening = async () => {
+    if (isListening) {
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+        mediaRecorderRef.current.stop();
       }
-    }
-
-    return () => {
-      if (recognitionRef.current) {
-        try { recognitionRef.current.stop(); } catch(e){}
-      }
-    };
-  }, []);
-
-  const toggleListening = () => {
-    if (!recognitionRef.current) {
-      toast.error("Microphone is not supported on this browser. Please use Chrome, Edge, or Safari.");
       return;
     }
-    if (isListening) {
-      recognitionRef.current.stop();
-    } else {
-      try {
-        recognitionRef.current.start();
-      } catch (e) {
-        console.error(e);
-      }
+
+    // Start recording
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      toast.error("Microphone is not supported on this browser.");
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstart = () => setIsListening(true);
+      
+      mediaRecorder.onstop = async () => {
+        setIsListening(false);
+        setIsTranscribing(true);
+        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+        stream.getTracks().forEach((track) => track.stop());
+
+        try {
+          const formData = new FormData();
+          formData.append("file", audioBlob, "recording.webm");
+          
+          const response = await fetch("/api/capture/transcribe", {
+            method: "POST",
+            body: formData,
+          });
+          const data = await response.json();
+          if (data.text) {
+             setInput((prev) => (prev + " " + data.text).trim());
+          } else {
+             toast.error(data.error || "Failed to transcribe audio.");
+          }
+        } catch (e) {
+          toast.error("Error connecting to transcription service.");
+        } finally {
+          setIsTranscribing(false);
+        }
+      };
+
+      mediaRecorder.start();
+    } catch (error) {
+      toast.error("Microphone access denied.");
+      setIsListening(false);
     }
   };
 
@@ -309,10 +324,11 @@ export function CaptureForm({ defaultInput = "" }: CaptureFormProps) {
               <Button
                 variant={isListening ? "primary" : "secondary"}
                 onClick={toggleListening}
+                disabled={isTranscribing}
                 className={isListening ? "animate-pulse bg-gold/20 text-gold-foreground border border-gold hover:bg-gold/30 shadow-[0_0_15px_rgba(230,193,106,0.3)] transition-all" : ""}
               >
-                {isListening ? <Mic className="mr-2 h-4 w-4 animate-pulse" style={{ color: "#E6C16A" }} /> : <Mic className="mr-2 h-4 w-4" />}
-                {isListening ? "Recording..." : "Dictate"}
+                {isTranscribing ? <Loader2 className="mr-2 h-4 w-4 animate-spin text-gold" /> : isListening ? <Mic className="mr-2 h-4 w-4 animate-pulse" style={{ color: "#E6C16A" }} /> : <Mic className="mr-2 h-4 w-4" />}
+                {isTranscribing ? "Transcribing..." : isListening ? "Stop & Save" : "Dictate"}
               </Button>
 
               <Button variant="ghost" onClick={() => setInput("Called Priya, she's interested, send proposal by Friday")}>

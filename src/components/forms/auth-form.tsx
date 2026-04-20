@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { Eye, EyeOff } from "lucide-react";
 import { authLoginSchema, authRegisterSchema } from "@/lib/schemas";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,6 +24,7 @@ type AuthField = {
 export function AuthForm({ mode }: AuthFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const schema = mode === "login" ? authLoginSchema : authRegisterSchema;
   const form = useForm({
     resolver: zodResolver(schema),
@@ -71,18 +73,31 @@ export function AuthForm({ mode }: AuthFormProps) {
   return (
     <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
       {fields.map((field, index) => (
-        <div key={field.name} className="cinematic-auth-field space-y-2" style={{ animationDelay: `${index * 90}ms` }}>
+        <div key={field.name} className="cinematic-auth-field space-y-2 relative" style={{ animationDelay: `${index * 90}ms` }}>
           <label className="text-sm font-medium text-slate-700">{field.label}</label>
-          <Input
-            placeholder={field.placeholder}
-            type={field.type}
-            autoComplete={
-              field.name === "email" ? "email" :
-              field.name === "password" ? (mode === "login" ? "current-password" : "new-password") :
-              field.name === "name" ? "name" : "off"
-            }
-            {...form.register(field.name)}
-          />
+          <div className="relative">
+            <Input
+              placeholder={field.placeholder}
+              type={field.name === "password" && showPassword ? "text" : field.type}
+              autoComplete={
+                field.name === "email" ? "email" :
+                field.name === "password" ? (mode === "login" ? "current-password" : "new-password") :
+                field.name === "name" ? "name" : "off"
+              }
+              className={field.name === "password" ? "pr-10" : ""}
+              {...form.register(field.name)}
+            />
+            {field.name === "password" && (
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            )}
+          </div>
           <p className="text-xs text-rose-600">{String(form.formState.errors[field.name]?.message ?? "")}</p>
         </div>
       ))}

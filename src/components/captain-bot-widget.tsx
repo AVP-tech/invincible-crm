@@ -14,7 +14,7 @@ type Message = {
 export function CaptainBotWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
-    { role: "assistant", content: "Ahoy there, matey! I'm Captain Bot. How can I help you navigate your CRM today?" }
+    { role: "assistant", content: "Ahoy there, matey! I'm Captain Hook. How can I help you navigate your CRM today?" }
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -58,7 +58,7 @@ export function CaptainBotWidget() {
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
-            className="fixed bottom-6 right-6 z-[9999]"
+            className="fixed bottom-6 left-6 z-[9999]"
           >
             <button
               onClick={() => setIsOpen(true)}
@@ -68,7 +68,7 @@ export function CaptainBotWidget() {
               <div className="absolute inset-0 overflow-hidden rounded-full">
                 <Image
                   src="/captain-bot.png"
-                  alt="Captain Bot"
+                  alt="Captain Hook"
                   fill
                   className="object-cover"
                   onError={(e) => {
@@ -96,7 +96,7 @@ export function CaptainBotWidget() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.9 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed bottom-6 right-6 z-[10000] flex h-[500px] w-[350px] flex-col overflow-hidden rounded-2xl border border-gold/20 bg-[#132032]/95 shadow-[0_0_40px_rgba(0,0,0,0.5)] backdrop-blur-xl sm:h-[600px] sm:w-[400px]"
+            className="fixed bottom-6 left-6 z-[10000] flex h-[500px] w-[350px] flex-col overflow-hidden rounded-2xl border border-gold/20 bg-[#132032]/95 shadow-[0_0_40px_rgba(0,0,0,0.5)] backdrop-blur-xl sm:h-[600px] sm:w-[400px]"
           >
             {/* Header */}
             <div className="flex items-center justify-between border-b border-white/10 bg-black/40 px-4 py-3">
@@ -106,7 +106,7 @@ export function CaptainBotWidget() {
                    <Bot className="absolute inset-0 m-auto h-6 w-6 text-gold" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-white">Captain Bot</h3>
+                  <h3 className="font-semibold text-white">Captain Hook</h3>
                   <p className="text-xs text-emerald-400">Always on Duty</p>
                 </div>
               </div>
@@ -158,7 +158,7 @@ export function CaptainBotWidget() {
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder="Ask Captain Bot..."
+                  placeholder="Ask Captain Hook..."
                   className="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white placeholder-white/40 outline-none transition focus:border-gold/50 focus:bg-white/10"
                 />
                 <Button type="submit" disabled={!input.trim() || isLoading} variant="primary" className="h-10 w-10 p-0 rounded-xl bg-gold text-black hover:bg-gold/80">

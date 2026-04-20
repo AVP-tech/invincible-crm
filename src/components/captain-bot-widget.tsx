@@ -58,8 +58,23 @@ export function CaptainBotWidget() {
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
-            className="fixed bottom-6 left-6 z-[9999]"
+            className="fixed bottom-6 left-4 lg:left-[296px] z-[9999] flex items-center gap-4"
           >
+            {/* Floating Greeting Bubble */}
+            <motion.div
+              animate={{ y: [0, -8, 0] }}
+              transition={{ repeat: Infinity, duration: 3.5, ease: "easeInOut" }}
+              className="hidden sm:block relative rounded-2xl bg-[#132032] border border-gold/30 px-4 py-3 shadow-[0_0_20px_rgba(230,193,106,0.2)] max-w-[220px]"
+            >
+              <p className="text-xs leading-relaxed text-slate-200">
+                Ahoy! I'm <strong className="text-gold">Captain Hook</strong> ⚓<br/>
+                Command me to solve your CRM problems!
+              </p>
+              {/* Arrow pointing right */}
+              <div className="absolute -right-[6px] top-1/2 -mt-1.5 h-0 w-0 border-y-[6px] border-l-[6px] border-y-transparent border-l-gold/30" />
+              <div className="absolute -right-[5px] top-1/2 -mt-1.5 h-0 w-0 border-y-[6px] border-l-[6px] border-y-transparent border-l-[#132032]" />
+            </motion.div>
+
             <button
               onClick={() => setIsOpen(true)}
               className="group relative flex h-16 w-16 items-center justify-center rounded-full border-2 border-gold/50 bg-[#132032] shadow-[0_0_20px_rgba(230,193,106,0.3)] transition-all hover:scale-110 hover:shadow-[0_0_30px_rgba(230,193,106,0.5)]"
@@ -96,7 +111,7 @@ export function CaptainBotWidget() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.9 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed bottom-6 left-6 z-[10000] flex h-[500px] w-[350px] flex-col overflow-hidden rounded-2xl border border-gold/20 bg-[#132032]/95 shadow-[0_0_40px_rgba(0,0,0,0.5)] backdrop-blur-xl sm:h-[600px] sm:w-[400px]"
+            className="fixed bottom-6 left-4 lg:left-[296px] z-[10000] flex h-[500px] w-[350px] flex-col overflow-hidden rounded-2xl border border-gold/20 bg-[#132032]/95 shadow-[0_0_40px_rgba(0,0,0,0.5)] backdrop-blur-xl sm:h-[600px] sm:w-[400px]"
           >
             {/* Header */}
             <div className="flex items-center justify-between border-b border-white/10 bg-black/40 px-4 py-3">

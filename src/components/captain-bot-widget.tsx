@@ -67,7 +67,7 @@ export function CaptainBotWidget() {
               className="hidden sm:block relative rounded-2xl bg-[#132032] border border-gold/30 px-4 py-3 shadow-[0_0_20px_rgba(230,193,106,0.2)] max-w-[220px]"
             >
               <p className="text-xs leading-relaxed text-slate-200">
-                Ahoy! I'm <strong className="text-gold">Captain Hook</strong> ⚓<br/>
+                Ahoy! I&apos;m <strong className="text-gold">Captain Hook</strong> ⚓<br/>
                 Command me to solve your CRM problems!
               </p>
               {/* Arrow pointing right */}

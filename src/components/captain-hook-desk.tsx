@@ -20,6 +20,19 @@ const STARTER_PROMPTS = [
   "Where should this WhatsApp conversation go in the CRM?",
 ];
 
+const shellClass =
+  "overflow-hidden border border-black/6 bg-[radial-gradient(circle_at_top,rgba(255,243,214,0.92)_0%,rgba(255,251,244,0.98)_42%,rgba(245,238,225,0.98)_100%)] text-slate-950 shadow-[0_24px_80px_rgba(15,23,42,0.14)] dark:border-white/10 dark:bg-[radial-gradient(circle_at_top,rgba(255,239,196,0.94)_0%,rgba(245,238,225,0.98)_48%,rgba(232,223,206,0.98)_100%)] dark:text-slate-950";
+const frostedPanelClass =
+  "rounded-[1.75rem] border border-black/6 bg-white/76 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.5)] backdrop-blur dark:border-black/10 dark:bg-white/72";
+const softPanelClass =
+  "rounded-[1.5rem] border border-black/6 bg-white/80 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.5)] dark:border-black/10 dark:bg-white/74";
+const chatShellClass =
+  "flex min-h-[28rem] flex-col rounded-[1.75rem] border border-black/7 bg-[linear-gradient(180deg,rgba(255,255,255,0.74),rgba(245,238,225,0.92))] shadow-[inset_0_1px_0_rgba(255,255,255,0.4)]";
+const assistantBubbleClass =
+  "rounded-[1.4rem] rounded-tl-md border border-black/7 bg-white/88 text-slate-800 shadow-sm";
+const textAreaClass =
+  "min-h-[110px] border-black/10 bg-white/92 text-slate-950 placeholder:text-slate-500 dark:!border-black/10 dark:!bg-white/92 dark:!text-slate-950 dark:placeholder:!text-slate-500";
+
 export function CaptainHookDesk() {
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -81,20 +94,20 @@ export function CaptainHookDesk() {
   }
 
   return (
-    <Card className="overflow-hidden border-gold/10 bg-[radial-gradient(circle_at_top,#17253a_0%,#101723_48%,#0b1018_100%)] text-white shadow-[0_24px_80px_rgba(2,8,23,0.35)]">
-      <CardHeader className="border-b border-white/8 pb-5">
+    <Card className={shellClass}>
+      <CardHeader className="border-b border-black/8 pb-5 dark:border-black/10">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
           <div className="max-w-2xl">
-            <div className="flex items-center gap-2 text-gold/70">
+            <div className="flex items-center gap-2 text-[#9b6d14]">
               <Compass className="h-4 w-4" />
               <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em]">
                 Captain Hook Desk
               </p>
             </div>
-            <h3 className="mt-3 text-2xl font-semibold text-white">
+            <h3 className="mt-3 text-2xl font-semibold text-slate-950">
               One place for guidance, search, and quick saves
             </h3>
-            <p className="mt-3 text-sm leading-7 text-slate-300">
+            <p className="mt-3 text-sm leading-7 text-slate-700">
               Captain Hook is your embedded CRM copilot. Ask what needs
               attention, where something belongs, or tell it to save a task,
               reminder, deal, or note.
@@ -107,7 +120,7 @@ export function CaptainHookDesk() {
                 key={prompt}
                 type="button"
                 onClick={() => setInput(prompt)}
-                className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-2 text-left text-xs font-medium text-slate-200 transition hover:border-gold/20 hover:bg-gold/[0.08] hover:text-white"
+                className="rounded-full border border-black/8 bg-white/75 px-3 py-2 text-left text-xs font-medium text-slate-800 transition hover:border-gold/30 hover:bg-gold/[0.12] hover:text-slate-950"
               >
                 {prompt}
               </button>
@@ -117,7 +130,7 @@ export function CaptainHookDesk() {
       </CardHeader>
 
       <CardContent className="grid gap-6 p-6 lg:grid-cols-[0.95fr_1.05fr]">
-        <div className="rounded-[1.75rem] border border-gold/12 bg-gold/[0.05] p-5">
+        <div className={frostedPanelClass}>
           <div className="flex items-center gap-3">
             <div className="relative h-14 w-14 overflow-hidden rounded-full border border-gold/30 bg-[#132032]">
               <Image
@@ -129,27 +142,27 @@ export function CaptainHookDesk() {
               <Bot className="absolute inset-0 m-auto h-6 w-6 text-gold" />
             </div>
             <div>
-              <p className="text-lg font-semibold text-white">Captain Hook</p>
-              <p className="text-sm text-emerald-400">On duty, minus the chaos</p>
+              <p className="text-lg font-semibold text-slate-950">Captain Hook</p>
+              <p className="text-sm text-emerald-600">On duty, minus the chaos</p>
             </div>
           </div>
 
           <div className="mt-6 space-y-4">
-            <div className="rounded-[1.5rem] border border-white/8 bg-white/[0.05] p-4">
-              <p className="text-sm font-semibold text-white">Best for</p>
-              <p className="mt-2 text-sm leading-6 text-slate-300">
+            <div className={softPanelClass}>
+              <p className="text-sm font-semibold text-slate-950">Best for</p>
+              <p className="mt-2 text-sm leading-6 text-slate-700">
                 Surfacing overdue follow-ups, triaging stalled deals, finding
                 buried context, and saving quick updates without switching
                 screens.
               </p>
             </div>
 
-            <div className="rounded-[1.5rem] border border-white/8 bg-white/[0.05] p-4">
-              <div className="flex items-center gap-2 text-gold">
+            <div className={softPanelClass}>
+              <div className="flex items-center gap-2 text-[#c38b2d]">
                 <Sparkles className="h-4 w-4" />
-                <p className="text-sm font-semibold text-white">Good prompts</p>
+                <p className="text-sm font-semibold text-slate-950">Good prompts</p>
               </div>
-              <ul className="mt-3 space-y-2 text-sm leading-6 text-slate-300">
+              <ul className="mt-3 space-y-2 text-sm leading-6 text-slate-700">
                 <li>&ldquo;What should I follow up on first today?&rdquo;</li>
                 <li>&ldquo;Find anything related to Rahul or BrightPath.&rdquo;</li>
                 <li>&ldquo;Create a task to send the proposal on Friday.&rdquo;</li>
@@ -159,10 +172,10 @@ export function CaptainHookDesk() {
           </div>
         </div>
 
-        <div className="flex min-h-[28rem] flex-col rounded-[1.75rem] border border-white/8 bg-black/20">
-          <div className="border-b border-white/8 px-4 py-3">
-            <p className="text-sm font-semibold text-white">Captain chat</p>
-            <p className="mt-1 text-xs text-slate-400">
+        <div className={chatShellClass}>
+          <div className="border-b border-black/8 px-4 py-3 dark:border-black/10">
+            <p className="text-sm font-semibold text-slate-950">Captain chat</p>
+            <p className="mt-1 text-xs text-slate-600">
               Calm, embedded, and out of the way.
             </p>
           </div>
@@ -183,7 +196,7 @@ export function CaptainHookDesk() {
                     "max-w-[85%] rounded-[1.4rem] px-4 py-3 text-sm leading-6 " +
                     (message.role === "user"
                       ? "rounded-tr-md bg-gold text-black"
-                      : "rounded-tl-md border border-white/8 bg-white/[0.06] text-slate-200")
+                      : `rounded-tl-md ${assistantBubbleClass}`)
                   }
                 >
                   {message.content}
@@ -193,7 +206,7 @@ export function CaptainHookDesk() {
 
             {isLoading ? (
               <div className="flex justify-start">
-                <div className="rounded-[1.4rem] rounded-tl-md border border-white/8 bg-white/[0.06] px-4 py-3 text-slate-300">
+                <div className={`rounded-[1.4rem] rounded-tl-md px-4 py-3 ${assistantBubbleClass}`}>
                   <Loader2 className="h-4 w-4 animate-spin" />
                 </div>
               </div>
@@ -207,14 +220,14 @@ export function CaptainHookDesk() {
               event.preventDefault();
               void sendMessage(input);
             }}
-            className="border-t border-white/8 p-4"
+            className="border-t border-black/8 p-4 dark:border-black/10"
           >
             <div className="space-y-3">
               <Textarea
                 value={input}
                 onChange={(event) => setInput(event.target.value)}
                 placeholder="Ask Captain Hook something useful..."
-                className="min-h-[110px] border-white/10 bg-white/[0.05] text-white placeholder:text-slate-500"
+                className={textAreaClass}
               />
               <div className="flex justify-end">
                 <Button

@@ -30,10 +30,14 @@ export const metadata: Metadata = {
   alternates: {
     canonical: siteUrl
   },
+  manifest: "/manifest.webmanifest",
   icons: {
-    icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
+    icon: [
+      { url: "/icon", type: "image/png", sizes: "512x512" },
+      { url: "/favicon.svg", type: "image/svg+xml", sizes: "any" }
+    ],
     shortcut: ["/favicon.svg"],
-    apple: [{ url: "/favicon.svg" }]
+    apple: [{ url: "/apple-icon", sizes: "180x180", type: "image/png" }]
   },
   keywords: [
     "CRM",
@@ -83,7 +87,13 @@ const structuredData = {
       "@id": `${siteUrl}/#organization`,
       url: siteUrl,
       name: siteTitle,
-      logo: `${siteUrl}/favicon.svg`,
+      logo: {
+        "@type": "ImageObject",
+        url: `${siteUrl}/icon`,
+        width: 512,
+        height: 512
+      },
+      image: `${siteUrl}/opengraph-image`,
       description: siteDescription
     }
   ]

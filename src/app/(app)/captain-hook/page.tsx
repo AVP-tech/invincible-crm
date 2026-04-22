@@ -25,6 +25,14 @@ const detailCards = [
   },
 ];
 
+const detailCardClass =
+  "border-black/6 bg-white/86 text-slate-950 shadow-[0_16px_40px_rgba(15,23,42,0.08)] dark:border-black/10 dark:bg-white/80 dark:text-slate-950";
+const bodyCopyClass = "mt-2 text-sm leading-7 text-slate-700";
+const helperCardClass =
+  "border-gold/15 bg-gold/[0.08] text-slate-950 shadow-[0_16px_40px_rgba(230,193,106,0.08)] dark:border-gold/20 dark:bg-gold/[0.1] dark:text-slate-950";
+const helperPromptClass =
+  "rounded-2xl border border-gold/15 bg-white/78 px-4 py-3 text-sm text-slate-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.45)] dark:border-black/10 dark:bg-white/72 dark:text-slate-700";
+
 export default async function CaptainHookPage() {
   await requireUser();
 
@@ -43,16 +51,16 @@ export default async function CaptainHookPage() {
           return (
             <Card
               key={card.title}
-              className="border-black/5 bg-white dark:border-white/8 dark:bg-white/5"
+              className={detailCardClass}
             >
               <CardContent className="p-5">
                 <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gold/10 text-gold">
                   <Icon className="h-5 w-5" />
                 </div>
-                <h2 className="mt-4 text-lg font-semibold text-ink dark:text-white">
+                <h2 className="mt-4 text-lg font-semibold text-slate-950">
                   {card.title}
                 </h2>
-                <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-400">
+                <p className={bodyCopyClass}>
                   {card.description}
                 </p>
               </CardContent>
@@ -61,7 +69,7 @@ export default async function CaptainHookPage() {
         })}
       </div>
 
-      <Card className="border-gold/10 bg-gold/[0.05] dark:border-gold/10 dark:bg-gold/[0.04]">
+      <Card className={helperCardClass}>
         <CardContent className="flex flex-col gap-4 p-5 lg:flex-row lg:items-start lg:justify-between">
           <div className="max-w-2xl">
             <div className="flex items-center gap-2 text-gold">
@@ -70,13 +78,13 @@ export default async function CaptainHookPage() {
                 How To Use It
               </p>
             </div>
-            <p className="mt-3 text-sm leading-7 text-slate-700 dark:text-slate-300">
+            <p className="mt-3 text-sm leading-7 text-slate-700">
               Best results come when you talk to Captain Hook like a teammate:
               ask what needs attention, ask it to find something specific, or
               tell it exactly what you want saved.
             </p>
           </div>
-          <div className="rounded-2xl border border-gold/15 bg-white/70 px-4 py-3 text-sm text-slate-700 dark:bg-white/5 dark:text-slate-300">
+          <div className={helperPromptClass}>
             Try prompts like:
             <div className="mt-2 space-y-1">
               <p>Show me overdue follow-ups.</p>

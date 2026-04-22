@@ -154,6 +154,128 @@ const KNOWLEDGE_CHUNKS: ProductKnowledgeChunk[] = [
     ].join(" ")
   },
   {
+    id: "integrations",
+    title: "Integrations setup",
+    url: "https://invinciblecrm.com/integrations",
+    keywords: [
+      "integration",
+      "integrations",
+      "connect whatsapp",
+      "whatsapp setup",
+      "email inbox",
+      "webhook",
+      "meta api",
+      "background jobs",
+      "connect tools"
+    ],
+    content: [
+      "Invincible CRM has an Integrations area for connecting the tools where real conversations already happen, especially email inboxes, WhatsApp messages, and background processing.",
+      "The setup is meant to bridge manual CRM updates into operational capture through webhook-based WhatsApp setup and connected inbox workflows.",
+      "For guided setup, users can book onboarding and get help connecting WhatsApp AI and related tokens or webhooks."
+    ].join(" ")
+  },
+  {
+    id: "automations",
+    title: "Automation rules",
+    url: "https://invinciblecrm.com/automations",
+    keywords: [
+      "automation",
+      "automations",
+      "rules",
+      "trigger",
+      "deal stage",
+      "task completion",
+      "inbound conversation",
+      "workflow"
+    ],
+    content: [
+      "Invincible CRM supports lightweight automation rules designed to keep the CRM proactive without turning it into an enterprise workflow maze.",
+      "Automations can trigger on deal stage movement, task completion, or a new inbound conversation and create the next action at the right moment.",
+      "A simple example is: when a deal moves to Proposal Sent, create a follow-up task due in 3 days."
+    ].join(" ")
+  },
+  {
+    id: "imports",
+    title: "Imports and data migration",
+    url: "https://invinciblecrm.com/imports",
+    keywords: [
+      "import",
+      "imports",
+      "csv",
+      "contacts import",
+      "transcript",
+      "meeting notes",
+      "migration",
+      "spreadsheet",
+      "dedupe"
+    ],
+    content: [
+      "The Imports area is designed to move real business data into the workspace with less migration friction.",
+      "It supports meeting transcript import so pasted call notes or transcripts can become a clean summary, follow-up task, and deal or contact updates.",
+      "It also supports CSV contacts import with preview and dedupe checks before anything is written."
+    ].join(" ")
+  },
+  {
+    id: "inbox-search",
+    title: "Inbox capture and workspace search",
+    url: "https://invinciblecrm.com/inbox",
+    keywords: [
+      "inbox",
+      "paste chat",
+      "email threads",
+      "call notes",
+      "search",
+      "find context",
+      "search workspace",
+      "conversation capture"
+    ],
+    content: [
+      "The Inbox helps users paste WhatsApp chats, email threads, or rough call notes and convert them into clean CRM context with action-ready follow-ups.",
+      "Recent inbox captures act as a lightweight audit trail of conversations turned into CRM updates.",
+      "Search lets users find context fast across contacts, deals, tasks, and captured conversations from one place."
+    ].join(" ")
+  },
+  {
+    id: "finance",
+    title: "Finance and invoice tracking",
+    url: "https://invinciblecrm.com/finance",
+    keywords: [
+      "finance",
+      "invoice",
+      "invoices",
+      "revenue",
+      "export workbook",
+      "accounting",
+      "spreadsheet ops"
+    ],
+    content: [
+      "Invincible CRM includes invoice and spreadsheet-friendly revenue tracking so commercial follow-through stays visible next to CRM activity.",
+      "Users can track invoices, link them to contacts or deals, and export a workbook for spreadsheet-based operations.",
+      "The goal is to keep proposals, invoices, and revenue context from getting split across different tools."
+    ].join(" ")
+  },
+  {
+    id: "team",
+    title: "Team workspace and permissions",
+    url: "https://invinciblecrm.com/team",
+    keywords: [
+      "team",
+      "teammates",
+      "workspace",
+      "roles",
+      "permissions",
+      "owner",
+      "admin",
+      "member",
+      "viewer"
+    ],
+    content: [
+      "Invincible CRM supports a shared workspace where real teammates can work from one CRM context.",
+      "Owners and admins can add teammates, set integrations, manage automations, and track invoices. Members can work in the CRM, and viewers are read-only.",
+      "The focus is lightweight permissions with clear ownership."
+    ].join(" ")
+  },
+  {
     id: "support",
     title: "Support and response coverage",
     url: "https://invinciblecrm.com/help",

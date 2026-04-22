@@ -30,4 +30,25 @@ describe("product knowledge retrieval", () => {
     expect(context).toContain("free 10-minute onboarding video call");
     expect(context).toContain("Average setup time is 8 minutes");
   });
+
+  it("returns integrations and automation context for setup questions", () => {
+    const context = getRelevantProductKnowledgeContext(
+      "how do I connect whatsapp and set up automation rules?"
+    );
+
+    expect(context).toContain("[Integrations setup]");
+    expect(context).toContain("[Automation rules]");
+    expect(context).toContain("webhook-based WhatsApp setup");
+  });
+
+  it("returns import and finance context for operations questions", () => {
+    const context = getRelevantProductKnowledgeContext(
+      "can I import csv contacts and track invoices too?"
+    );
+
+    expect(context).toContain("[Imports and data migration]");
+    expect(context).toContain("[Finance and invoice tracking]");
+    expect(context).toContain("CSV contacts import");
+    expect(context).toContain("track invoices");
+  });
 });

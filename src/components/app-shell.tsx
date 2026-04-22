@@ -7,7 +7,6 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { MobileMenu } from "@/components/mobile-menu";
 import { NotificationCenter } from "@/components/notification-center";
 import { FloatingActionButton } from "@/components/floating-action-button";
-import { CaptainBotWidget } from "@/components/captain-bot-widget";
 
 import { SidebarNav } from "@/components/sidebar-nav";
 
@@ -108,8 +107,6 @@ export function AppShell({ user, children }: AppShellProps) {
         <main className="flex-1">
           <PageTransitionWrapper>{children}</PageTransitionWrapper>
         </main>
-        
-        <CaptainBotWidget />
       </div>
       <FloatingActionButton />
     </div>

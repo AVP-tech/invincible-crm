@@ -2,19 +2,20 @@ import OpenAI from "openai";
 import { db } from "@/lib/db";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
-import { getProductKnowledgeContext } from "@/lib/product-knowledge";
+import { getRelevantProductKnowledgeContext } from "@/lib/product-knowledge";
 
 /**
  * System prompt defining the bot's persona.
  * It keeps the assistant grounded in the product's public positioning
  * so WhatsApp replies stay useful, accurate, and on-brand.
  */
-const BOT_SYSTEM_PROMPT = `
+function buildBotSystemPrompt(knowledgeQuery: string) {
+  return `
 You are the WhatsApp assistant for Invincible CRM.
 Your job is to answer product, pricing, workflow, onboarding, and use-case questions accurately and helpfully.
 
 Use the product knowledge below as your source of truth:
-${getProductKnowledgeContext()}
+${getRelevantProductKnowledgeContext(knowledgeQuery)}
 
 RESPONSE STYLE:
 - Sound warm, natural, and human.
@@ -35,6 +36,7 @@ CRITICAL RULES:
 - Avoid asking "How can I help you?" again and again after you already answered.
 - If the user seems disinterested or asks to stop, respect that gracefully.
 `.trim();
+}
 
 /**
  * Source strings used to label notes in the database.
@@ -76,10 +78,11 @@ async function fetchConversationHistory(contactId: string, limit = 14) {
  */
 function buildMessagesFromHistory(
   history: { content: string; source: string }[],
-  currentMessage: string
+  currentMessage: string,
+  systemPrompt: string
 ): OpenAI.Chat.ChatCompletionMessageParam[] {
   const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-    { role: "system", content: BOT_SYSTEM_PROMPT }
+    { role: "system", content: systemPrompt }
   ];
 
   for (const note of history) {
@@ -94,6 +97,18 @@ function buildMessagesFromHistory(
   messages.push({ role: "user", content: currentMessage });
 
   return messages;
+}
+
+function buildKnowledgeQuery(
+  history: { content: string; source: string }[],
+  currentMessage: string
+) {
+  const recentUserTurns = history
+    .filter((note) => note.source === USER_NOTE_SOURCE)
+    .slice(-2)
+    .map((note) => note.content);
+
+  return [...recentUserTurns, currentMessage].join("\n");
 }
 
 /**
@@ -115,7 +130,13 @@ export async function generateConversationalReply(
 
   try {
     const history = await fetchConversationHistory(contactId);
-    const messages = buildMessagesFromHistory(history, currentMessage);
+    const knowledgeQuery = buildKnowledgeQuery(history, currentMessage);
+    const systemPrompt = buildBotSystemPrompt(knowledgeQuery);
+    const messages = buildMessagesFromHistory(
+      history,
+      currentMessage,
+      systemPrompt
+    );
 
     const client = new OpenAI({ apiKey: env.openAiApiKey });
 

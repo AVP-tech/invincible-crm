@@ -12,6 +12,12 @@ import { PageHeader } from "@/components/ui/page-header";
 import { AnimatedStatsGrid } from "@/components/animated-stats-grid";
 import { CometBorder } from "@/components/comet-border";
 
+const detailCardClass =
+  "rounded-3xl border border-black/5 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-[#131b29] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]";
+const detailTitleClass = "font-semibold text-ink dark:text-slate-50";
+const detailMetaClass = "mt-1 text-sm text-slate-500 dark:text-slate-300";
+const detailHintClass = "mt-3 text-sm text-slate-500 dark:text-slate-300";
+
 export default async function DashboardPage() {
   const user = await requireUser();
   const dashboard = await getDashboardData(user.workspaceId);
@@ -29,20 +35,27 @@ export default async function DashboardPage() {
         }
       />
 
-      {dashboard.stagnantDeals.length > 0 && (
+      {dashboard.stagnantDeals.length > 0 ? (
         <div className="flex items-start justify-between gap-4 rounded-3xl border border-[#D15533]/20 bg-[#D15533]/10 p-5 dark:border-[#E86A46]/20 dark:bg-[#E86A46]/10">
           <div className="flex items-start gap-4">
             <div className="mt-0.5 rounded-full bg-[#D15533]/20 p-2 text-[#D15533] dark:bg-[#E86A46]/20 dark:text-[#E86A46]">
               <AlertCircle className="h-5 w-5" />
             </div>
             <div>
-              <h3 className="font-semibold text-ink">Stagnant pipeline alert</h3>
+              <h3 className="font-semibold text-ink dark:text-slate-50">
+                Stagnant pipeline alert
+              </h3>
               <p className="mt-1 text-sm text-[#D15533] dark:text-[#E86A46]/90">
-                You have {dashboard.stagnantDeals.length} deal{dashboard.stagnantDeals.length > 1 ? "s" : ""} stuck in late stages for over 7 days without updates.
+                You have {dashboard.stagnantDeals.length} deal
+                {dashboard.stagnantDeals.length > 1 ? "s" : ""} stuck in late
+                stages for over 7 days without updates.
               </p>
-              <div className="mt-3 flex flex-wrap gap-2 text-sm text-ink/70">
+              <div className="mt-3 flex flex-wrap gap-2 text-sm text-ink/70 dark:text-slate-300">
                 {dashboard.stagnantDeals.map((deal) => (
-                  <span key={deal.id} className="rounded-xl border border-[#D15533]/20 bg-white/50 px-3 py-1 dark:bg-black/20 text-[#D15533] dark:text-[#E86A46]">
+                  <span
+                    key={deal.id}
+                    className="rounded-xl border border-[#D15533]/20 bg-white/50 px-3 py-1 text-[#D15533] dark:bg-black/20 dark:text-[#E86A46]"
+                  >
                     {deal.title}
                   </span>
                 ))}
@@ -50,72 +63,105 @@ export default async function DashboardPage() {
             </div>
           </div>
           <Link href="/deals" className="shrink-0">
-            <Button variant="secondary" className="border border-[#D15533]/20 text-[#D15533] hover:bg-[#D15533] hover:text-white dark:border-[#E86A46]/30 dark:text-[#E86A46] dark:hover:bg-[#E86A46] dark:bg-transparent">
+            <Button
+              variant="secondary"
+              className="border border-[#D15533]/20 text-[#D15533] hover:bg-[#D15533] hover:text-white dark:border-[#E86A46]/30 dark:bg-transparent dark:text-[#E86A46] dark:hover:bg-[#E86A46]"
+            >
               View pipeline
             </Button>
           </Link>
         </div>
-      )}
+      ) : null}
 
       <AnimatedStatsGrid className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Open deals" value={dashboard.stats.openDealsCount} hint="Active pipeline excluding won and lost" />
-        <StatCard label="Contacts" value={dashboard.stats.contactsCount} hint="People and companies you can act on" />
-        <StatCard label="Open tasks" value={dashboard.stats.openTasksCount} hint="Follow-ups still needing attention" />
-        <StatCard label="Upcoming follow-ups" value={dashboard.stats.upcomingFollowUpsCount} hint="Next seven days of scheduled activity" />
+        <StatCard
+          label="Open deals"
+          value={dashboard.stats.openDealsCount}
+          hint="Active pipeline excluding won and lost"
+        />
+        <StatCard
+          label="Contacts"
+          value={dashboard.stats.contactsCount}
+          hint="People and companies you can act on"
+        />
+        <StatCard
+          label="Open tasks"
+          value={dashboard.stats.openTasksCount}
+          hint="Follow-ups still needing attention"
+        />
+        <StatCard
+          label="Upcoming follow-ups"
+          value={dashboard.stats.upcomingFollowUpsCount}
+          hint="Next seven days of scheduled activity"
+        />
       </AnimatedStatsGrid>
 
       <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
         <CometBorder isActive={true} radius="1.5rem" duration={3.2}>
           <Card className="h-full border-transparent">
             <CardHeader>
-            <div>
-              <p className="text-sm font-semibold text-ink">Today’s tasks</p>
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">The follow-ups that should happen before the day closes.</p>
-            </div>
-            <Link href="/tasks">
-              <Button variant="secondary">Open tasks</Button>
-            </Link>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {dashboard.todayTasks.length ? (
-              dashboard.todayTasks.map((task) => (
-                <div key={task.id} className="rounded-3xl border border-black/5 bg-white p-4 dark:border-white/8 dark:bg-white/5">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="font-semibold text-ink">{task.title}</p>
-                      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                        {task.contact?.name ?? "No linked contact"} {task.deal ? `• ${task.deal.title}` : ""}
-                      </p>
-                    </div>
-                    <TaskPriorityBadge priority={task.priority} />
-                  </div>
-                  <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">{formatDueLabel(task.dueDate)}</p>
-                </div>
-              ))
-            ) : (
-              <div className="surface-soft rounded-4xl p-6 text-sm text-slate-600 dark:text-slate-400">
-                Nothing is due today. Add a new follow-up or use quick capture to create one from a sentence.
+              <div>
+                <p className="text-sm font-semibold text-ink dark:text-slate-50">
+                  Today&apos;s tasks
+                </p>
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                  The follow-ups that should happen before the day closes.
+                </p>
               </div>
-            )}
-          </CardContent>
-        </Card>
-      </CometBorder>
+              <Link href="/tasks">
+                <Button variant="secondary">Open tasks</Button>
+              </Link>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {dashboard.todayTasks.length ? (
+                dashboard.todayTasks.map((task) => (
+                  <div key={task.id} className={detailCardClass}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className={detailTitleClass}>{task.title}</p>
+                        <p className={detailMetaClass}>
+                          {task.contact?.name ?? "No linked contact"}
+                          {task.deal ? ` • ${task.deal.title}` : ""}
+                        </p>
+                      </div>
+                      <TaskPriorityBadge priority={task.priority} />
+                    </div>
+                    <p className={detailHintClass}>
+                      {formatDueLabel(task.dueDate)}
+                    </p>
+                  </div>
+                ))
+              ) : (
+                <div className="surface-soft rounded-4xl p-6 text-sm text-slate-600 dark:text-slate-400">
+                  Nothing is due today. Add a new follow-up or use quick capture
+                  to create one from a sentence.
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </CometBorder>
 
         <Card>
           <CardHeader>
             <div>
-              <p className="text-sm font-semibold text-ink">Pipeline snapshot</p>
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">A quick pulse on how opportunities are distributed.</p>
+              <p className="text-sm font-semibold text-ink dark:text-slate-50">
+                Pipeline snapshot
+              </p>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                A quick pulse on how opportunities are distributed.
+              </p>
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
             {dashboard.pipelineSnapshot.map((group) => (
-              <div key={group.stage} className="rounded-3xl border border-black/5 bg-white p-4 dark:border-white/8 dark:bg-white/5">
+              <div key={group.stage} className={detailCardClass}>
                 <div className="flex items-center justify-between gap-4">
                   <DealStageBadge stage={group.stage} />
-                  <span className="text-sm font-semibold text-ink">{compactNumber(group._count.stage)}</span>
+                  <span className="text-sm font-semibold text-ink dark:text-slate-100">
+                    {compactNumber(group._count.stage)}
+                  </span>
                 </div>
-                <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
+                <p className={detailHintClass}>
                   Value in stage: {formatCurrency(group._sum.amount ?? 0)}
                 </p>
               </div>
@@ -128,16 +174,29 @@ export default async function DashboardPage() {
         <Card>
           <CardHeader>
             <div>
-              <p className="text-sm font-semibold text-ink">Upcoming follow-ups</p>
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">What is coming next so no lead goes quiet accidentally.</p>
+              <p className="text-sm font-semibold text-ink dark:text-slate-50">
+                Upcoming follow-ups
+              </p>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                What is coming next so no lead goes quiet accidentally.
+              </p>
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
             {dashboard.upcomingFollowUps.map((task) => (
-              <div key={task.id} className="rounded-3xl border border-black/5 bg-white p-4 dark:border-white/8 dark:bg-white/5">
-                <p className="font-semibold text-ink">{task.title}</p>
-                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{task.contact?.name ?? "No contact linked"}</p>
-                <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">{formatDueLabel(task.dueDate)}</p>
+              <div key={task.id} className={detailCardClass}>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className={detailTitleClass}>{task.title}</p>
+                    <p className={detailMetaClass}>
+                      {task.contact?.name ?? "No contact linked"}
+                    </p>
+                  </div>
+                  <TaskPriorityBadge priority={task.priority} />
+                </div>
+                <p className={detailHintClass}>
+                  {formatDueLabel(task.dueDate)}
+                </p>
               </div>
             ))}
           </CardContent>
@@ -146,16 +205,20 @@ export default async function DashboardPage() {
         <CometBorder isActive={true} radius="1.5rem" duration={4}>
           <Card className="h-full border-transparent">
             <CardHeader>
-            <div>
-              <p className="text-sm font-semibold text-ink">Recent activity</p>
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">A running pulse of meaningful CRM actions.</p>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <ActivityList activities={dashboard.recentActivities} />
-          </CardContent>
-        </Card>
-      </CometBorder>
+              <div>
+                <p className="text-sm font-semibold text-ink dark:text-slate-50">
+                  Recent activity
+                </p>
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                  A running pulse of meaningful CRM actions.
+                </p>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <ActivityList activities={dashboard.recentActivities} />
+            </CardContent>
+          </Card>
+        </CometBorder>
       </div>
     </div>
   );

@@ -4,30 +4,67 @@ export const dealStageMeta: Record<
   DealStage,
   { label: string; tone: string; description: string }
 > = {
-  NEW_LEAD: { label: "New Lead", tone: "bg-slate-100 text-slate-700", description: "Fresh inbound or outbound lead" },
-  CONTACTED: { label: "Contacted", tone: "bg-sky-100 text-sky-700", description: "First outreach has happened" },
-  QUALIFIED: { label: "Qualified", tone: "bg-amber-100 text-amber-800", description: "The lead is worth pursuing" },
-  PROPOSAL_SENT: { label: "Proposal Sent", tone: "bg-orange-100 text-orange-700", description: "Commercial proposal shared" },
-  NEGOTIATION: { label: "Negotiation", tone: "bg-fuchsia-100 text-fuchsia-700", description: "Working through details and pricing" },
-  WON: { label: "Won", tone: "bg-emerald-100 text-emerald-700", description: "The deal is closed won" },
-  LOST: { label: "Lost", tone: "bg-rose-100 text-rose-700", description: "Not moving forward for now" }
+  NEW_LEAD: {
+    label: "New Lead",
+    tone: "bg-slate-100 text-slate-700 dark:bg-slate-400/15 dark:text-slate-200",
+    description: "Fresh inbound or outbound lead"
+  },
+  CONTACTED: {
+    label: "Contacted",
+    tone: "bg-sky-100 text-sky-700 dark:bg-sky-400/15 dark:text-sky-300",
+    description: "First outreach has happened"
+  },
+  QUALIFIED: {
+    label: "Qualified",
+    tone: "bg-amber-100 text-amber-800 dark:bg-amber-400/15 dark:text-amber-300",
+    description: "The lead is worth pursuing"
+  },
+  PROPOSAL_SENT: {
+    label: "Proposal Sent",
+    tone: "bg-orange-100 text-orange-700 dark:bg-orange-400/15 dark:text-orange-300",
+    description: "Commercial proposal shared"
+  },
+  NEGOTIATION: {
+    label: "Negotiation",
+    tone: "bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-400/15 dark:text-fuchsia-300",
+    description: "Working through details and pricing"
+  },
+  WON: {
+    label: "Won",
+    tone: "bg-emerald-100 text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-300",
+    description: "The deal is closed won"
+  },
+  LOST: {
+    label: "Lost",
+    tone: "bg-rose-100 text-rose-700 dark:bg-rose-400/15 dark:text-rose-300",
+    description: "Not moving forward for now"
+  }
 };
 
 export const taskPriorityMeta: Record<TaskPriority, string> = {
-  LOW: "bg-slate-100 text-slate-700",
-  MEDIUM: "bg-amber-100 text-amber-800",
-  HIGH: "bg-rose-100 text-rose-700"
+  LOW: "bg-slate-100 text-slate-700 dark:bg-slate-400/15 dark:text-slate-200",
+  MEDIUM: "bg-amber-100 text-amber-800 dark:bg-amber-400/15 dark:text-amber-300",
+  HIGH: "bg-rose-100 text-rose-700 dark:bg-rose-400/15 dark:text-rose-300"
 };
 
 export const taskStatusMeta: Record<TaskStatus, string> = {
-  OPEN: "bg-sky-100 text-sky-700",
-  COMPLETED: "bg-emerald-100 text-emerald-700"
+  OPEN: "bg-sky-100 text-sky-700 dark:bg-sky-400/15 dark:text-sky-300",
+  COMPLETED: "bg-emerald-100 text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-300"
 };
 
 export const conversationSourceMeta: Record<ConversationSource, { label: string; tone: string }> = {
-  WHATSAPP: { label: "WhatsApp", tone: "bg-emerald-100 text-emerald-700" },
-  EMAIL: { label: "Email", tone: "bg-sky-100 text-sky-700" },
-  MANUAL: { label: "Manual", tone: "bg-slate-100 text-slate-700" }
+  WHATSAPP: {
+    label: "WhatsApp",
+    tone: "bg-emerald-100 text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-300"
+  },
+  EMAIL: {
+    label: "Email",
+    tone: "bg-sky-100 text-sky-700 dark:bg-sky-400/15 dark:text-sky-300"
+  },
+  MANUAL: {
+    label: "Manual",
+    tone: "bg-slate-100 text-slate-700 dark:bg-slate-400/15 dark:text-slate-200"
+  }
 };
 
 export const activityTypeCopy: Record<ActivityType, string> = {

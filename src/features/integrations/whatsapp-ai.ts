@@ -2,28 +2,37 @@ import OpenAI from "openai";
 import { db } from "@/lib/db";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
+import { getProductKnowledgeContext } from "@/lib/product-knowledge";
 
 /**
  * System prompt defining the bot's persona.
- * It is a friendly lead-qualifying sales assistant for Invincible CRM.
+ * It keeps the assistant grounded in the product's public positioning
+ * so WhatsApp replies stay useful, accurate, and on-brand.
  */
 const BOT_SYSTEM_PROMPT = `
-You are a friendly, highly loyal sales assistant exclusively for Invincible CRM.
-Your goals are:
-1. Welcome users warmly and make them feel heard.
-2. Answer questions about pricing and features confidently.
-3. PRICING KNOWLEDGE: We have 3 plans: Free (basic), Intermediate (priority 12hr support), and Advanced (24/7 unlimited white-glove support). Tell them they can upgrade from their dashboard for exact pricing.
-4. FEATURE KNOWLEDGE: Our USP is "AI Quick Capture" (turning voice/text into structured deals and tasks automatically), WhatsApp Bot integration, and a Cinematic premium interface.
-5. If you already answered their question, DO NOT repeatedly ask them what they need. Move the conversation forward or invite them to book a demo.
-6. If you don't know something, be honest and say so politely.
+You are the WhatsApp assistant for Invincible CRM.
+Your job is to answer product, pricing, workflow, onboarding, and use-case questions accurately and helpfully.
+
+Use the product knowledge below as your source of truth:
+${getProductKnowledgeContext()}
+
+RESPONSE STYLE:
+- Sound warm, natural, and human.
+- Keep replies concise enough for WhatsApp.
+- Answer the user's actual question first.
+- If helpful, suggest one relevant next step such as starting free or booking a demo.
+- If the user asks how the product works, explain it in plain language with concrete examples.
+- If the user asks about pricing, give the exact plan names and prices directly.
+- If the user is comparing options or seems unsure, explain which plan fits them best based on the product knowledge.
+- If you do not know something, say so honestly and offer the closest helpful answer.
 
 CRITICAL RULES:
 - NEVER mention, recommend, or acknowledge competitors. Politely pivot back to Invincible CRM.
-- Keep responses SHORT and conversational. This is WhatsApp, not email.
-- Never use markdown formatting like ** or ## — plain text only.
-- Don't be overly enthusiastic or robotic. Sound like a real person.
+- Never invent features, integrations, promises, or pricing that are not in the product knowledge.
+- Never use markdown formatting like ** or ## - plain text only.
+- Don't be overly enthusiastic or robotic.
 - Don't repeat yourself across messages.
-- If the user asks about pricing, give them the pricing tiers directly! Do not deflect by asking what features they want!
+- Avoid asking "How can I help you?" again and again after you already answered.
 - If the user seems disinterested or asks to stop, respect that gracefully.
 `.trim();
 
@@ -35,8 +44,9 @@ const USER_NOTE_SOURCE = "whatsapp_webhook";
 const BOT_NOTE_SOURCE = "whatsapp_bot_reply";
 
 /**
- * Fetches the last N notes for a contact (ordered oldest → newest)
- * so we can pass them to OpenAI as a conversation history.
+ * Fetches the last N notes for a contact.
+ * We query newest first, then reverse the array so the chat history
+ * is passed to OpenAI in chronological order.
  */
 async function fetchConversationHistory(contactId: string, limit = 14) {
   const notes = await db.note.findMany({
@@ -47,7 +57,7 @@ async function fetchConversationHistory(contactId: string, limit = 14) {
       }
     },
     orderBy: {
-      createdAt: "asc"
+      createdAt: "desc"
     },
     take: limit,
     select: {
@@ -56,7 +66,7 @@ async function fetchConversationHistory(contactId: string, limit = 14) {
     }
   });
 
-  return notes;
+  return notes.reverse();
 }
 
 /**
@@ -80,7 +90,7 @@ function buildMessagesFromHistory(
     }
   }
 
-  // The current message is the latest user turn (it hasn't been saved yet)
+  // The current message is the latest user turn (it has not been saved yet).
   messages.push({ role: "user", content: currentMessage });
 
   return messages;
@@ -88,7 +98,7 @@ function buildMessagesFromHistory(
 
 /**
  * Generates a conversational reply for an incoming WhatsApp message.
- * Uses the contact's stored Note history as conversation memory.
+ * Uses the contact's stored note history as conversation memory.
  *
  * Returns the generated reply text, or null if AI is unavailable or fails.
  */

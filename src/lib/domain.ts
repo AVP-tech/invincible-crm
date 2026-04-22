@@ -44,7 +44,7 @@ export const activityTypeCopy: Record<ActivityType, string> = {
   TASK_DELETED: "Task deleted",
   TASK_RECURRING_SCHEDULED: "Recurring follow-up scheduled",
   NOTE_ADDED: "Note added",
-  CAPTURE_APPLIED: "AI capture applied",
+  CAPTURE_APPLIED: "Quick capture applied",
   CONVERSATION_CAPTURED: "Conversation captured",
   TEAM_MEMBER_ADDED: "Team member added",
   INTEGRATION_SYNCED: "Integration synced",

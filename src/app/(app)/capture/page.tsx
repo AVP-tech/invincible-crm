@@ -15,7 +15,7 @@ export default function CapturePage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="AI capture"
+        eyebrow="Quick capture"
         title="Your CRM updates itself — just talk."
         description="Describe what happened in plain language. Invincible CRM extracts contacts, deals, tasks, and notes — ready for your review before anything is saved."
       />
@@ -24,3 +24,4 @@ export default function CapturePage() {
     </div>
   );
 }
+

@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { DealStage, TaskPriority, TaskRecurrencePattern } from "@prisma/client";
-import { CheckCircle2, Info, Loader2, Sparkles, Mic, MicOff } from "lucide-react";
+import { CheckCircle2, Info, Loader2, Mic, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { CometBorder } from "@/components/comet-border";
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,6 @@ type CaptureFormProps = {
 type CaptureResponseMeta = {
   status: "idle" | "ready" | "fallback";
   fallbackReason?: "ai_unavailable";
-  provider?: "Gemini" | "OpenAI";
 };
 
 type CaptureApplyResult = {
@@ -94,7 +93,7 @@ function getConfidenceMeta(confidence: number) {
   }
 
   return {
-    label: "Low — verify manually",
+    label: "Low - review carefully",
     tone: "bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-200"
   };
 }
@@ -112,14 +111,14 @@ function buildSavedSummary(result: CaptureApplyResult) {
   }
 
   if (entities.length === 1) {
-    return `Saved to CRM — ${entities[0]} created.`;
+    return `Saved to CRM - ${entities[0]} created.`;
   }
 
   if (entities.length === 2) {
-    return `Saved to CRM — ${entities[0]} and ${entities[1]} created.`;
+    return `Saved to CRM - ${entities[0]} and ${entities[1]} created.`;
   }
 
-  return `Saved to CRM — ${entities.slice(0, -1).join(", ")}, and ${entities.at(-1)} created.`;
+  return `Saved to CRM - ${entities.slice(0, -1).join(", ")}, and ${entities.at(-1)} created.`;
 }
 
 function hasStructuredFields(preview: CapturePreview) {
@@ -193,7 +192,7 @@ export function CaptureForm({ defaultInput = "" }: CaptureFormProps) {
           } else {
              toast.error(data.error || "Failed to transcribe audio.");
           }
-        } catch (e) {
+        } catch {
           toast.error("Error connecting to transcription service.");
         } finally {
           setIsTranscribing(false);
@@ -201,7 +200,7 @@ export function CaptureForm({ defaultInput = "" }: CaptureFormProps) {
       };
 
       mediaRecorder.start();
-    } catch (error) {
+    } catch {
       toast.error("Microphone access denied.");
       setIsListening(false);
     }
@@ -253,10 +252,9 @@ export function CaptureForm({ defaultInput = "" }: CaptureFormProps) {
       setPreview(payload.preview);
       setCaptureMeta({
         status: payload.status ?? "ready",
-        fallbackReason: payload.fallbackReason,
-        provider: payload.provider
+        fallbackReason: payload.fallbackReason
       });
-      toast.success(payload.status === "fallback" ? "Preview ready. Review carefully before saving." : "Preview ready");
+      toast.success(payload.status === "fallback" ? "Draft ready. Give it a quick review before saving." : "Draft ready");
     } catch {
       toast.error("Could not parse this capture");
     } finally {
@@ -301,7 +299,7 @@ export function CaptureForm({ defaultInput = "" }: CaptureFormProps) {
           <CardHeader>
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.3em] text-moss">Quick capture</p>
-              <h2 className="mt-2 text-2xl font-semibold text-ink">Write the update once. We’ll draft the CRM fields.</h2>
+              <h2 className="mt-2 text-2xl font-semibold text-ink">Write the update once. We&apos;ll draft the CRM fields.</h2>
             </div>
           </CardHeader>
 
@@ -352,7 +350,7 @@ export function CaptureForm({ defaultInput = "" }: CaptureFormProps) {
               {preview && !savedSummary ? (
                 <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600 dark:bg-white/10 dark:text-slate-300">
                   <span className="mr-2 h-2 w-2 rounded-full bg-slate-400 dark:bg-slate-300" />
-                  Draft — not saved yet
+                  Draft - not saved yet
                 </span>
               ) : null}
             </div>
@@ -363,8 +361,8 @@ export function CaptureForm({ defaultInput = "" }: CaptureFormProps) {
           {savedSummary ? (
             <div className="surface-soft rounded-4xl p-6 text-center">
               <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-600 dark:text-emerald-300" />
-              <p className="mt-4 text-lg font-semibold text-ink">✓ {savedSummary}</p>
-              <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">The draft is now committed. Start the next update whenever you’re ready.</p>
+              <p className="mt-4 text-lg font-semibold text-ink">{savedSummary}</p>
+              <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">The draft is now committed. Start the next update whenever you&apos;re ready.</p>
               <Button className="mt-5" onClick={resetCapture}>
                 Capture another
               </Button>
@@ -379,7 +377,7 @@ export function CaptureForm({ defaultInput = "" }: CaptureFormProps) {
             <>
               {captureMeta.status === "fallback" && captureMeta.fallbackReason === "ai_unavailable" ? (
                 <div className="rounded-3xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
-                  ⚠ AI extraction is temporarily limited. Fields were filled using basic pattern matching — please review carefully before saving.
+                  Draft generated in safe mode. Give the fields a quick review before saving.
                 </div>
               ) : null}
 
@@ -387,12 +385,7 @@ export function CaptureForm({ defaultInput = "" }: CaptureFormProps) {
                 <div className="flex flex-wrap items-center gap-3">
                   {confidenceMeta ? (
                     <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold ${confidenceMeta.tone}`}>
-                      {(preview.confidence * 100).toFixed(0)}% · {confidenceMeta.label}
-                    </span>
-                  ) : null}
-                  {captureMeta.provider ? (
-                    <span className="text-xs font-medium uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">
-                      via {captureMeta.provider}
+                      {(preview.confidence * 100).toFixed(0)}% - {confidenceMeta.label}
                     </span>
                   ) : null}
                   <div className="group relative inline-flex">
@@ -407,7 +400,7 @@ export function CaptureForm({ defaultInput = "" }: CaptureFormProps) {
                       role="tooltip"
                       className="pointer-events-none absolute left-0 top-10 z-10 w-72 rounded-2xl bg-[#132032] px-3 py-2 text-xs leading-relaxed text-white opacity-0 shadow-xl transition group-hover:opacity-100 group-focus-within:opacity-100"
                     >
-                      Confidence score reflects how certain the AI is about the extracted fields. Below 70% — review all fields carefully before saving.
+                      Confidence score reflects how certain the draft is about the extracted fields. Below 70% - review all fields carefully before saving.
                     </div>
                   </div>
                 </div>
@@ -419,13 +412,13 @@ export function CaptureForm({ defaultInput = "" }: CaptureFormProps) {
                 ) : null}
 
                 {preview.suggestedUpdates.length ? (
-                  <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{preview.suggestedUpdates.join(" • ")}</p>
+                  <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{preview.suggestedUpdates.join(" | ")}</p>
                 ) : null}
               </div>
 
               {!hasStructuredFields(preview) ? (
                 <div className="surface-soft rounded-4xl p-6 text-sm text-slate-600 dark:text-slate-300">
-                  We couldn&apos;t extract structured fields from this note. Try adding a name, action, or date — for example: &quot;Call Rahul tomorrow about the proposal.&quot;
+                  We couldn&apos;t extract structured fields from this note. Try adding a name, action, or date - for example: &quot;Call Rahul tomorrow about the proposal.&quot;
                 </div>
               ) : null}
 
@@ -685,3 +678,4 @@ function ConfirmationSkeleton() {
     </div>
   );
 }
+

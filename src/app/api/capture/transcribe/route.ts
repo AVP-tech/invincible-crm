@@ -13,7 +13,7 @@ export async function POST(request: Request) {
     }
 
     if (!env.openAiApiKey) {
-      return NextResponse.json({ error: "OpenAI API Key is missing. Speech to text is disabled." }, { status: 503 });
+      return NextResponse.json({ error: "Voice capture is temporarily unavailable." }, { status: 503 });
     }
 
     const client = new OpenAI({ apiKey: env.openAiApiKey });
@@ -34,6 +34,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ text: response.text });
   } catch (error) {
     logger.error("Whisper transcription failed", { error: error instanceof Error ? error.message : "Unknown error" });
-    return NextResponse.json({ error: "Transcription failed. Please try again." }, { status: 500 });
+    return NextResponse.json({ error: "Could not transcribe the recording right now. Please try again." }, { status: 500 });
   }
 }

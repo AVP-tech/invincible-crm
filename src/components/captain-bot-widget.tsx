@@ -17,6 +17,7 @@ type Position = {
 };
 
 const STORAGE_KEY = "invincible-captain-hook-position-v2";
+const DRAG_HINT_STORAGE_KEY = "invincible-captain-hook-drag-hint-dismissed-v1";
 const VIEWPORT_MARGIN = 16;
 const MINIMIZED_SIZE = 56;
 const DRAG_THRESHOLD = 6;
@@ -52,6 +53,7 @@ export function CaptainBotWidget() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [position, setPosition] = useState<Position | null>(null);
+  const [showDragHint, setShowDragHint] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const widgetRef = useRef<HTMLDivElement>(null);
   const dragStateRef = useRef<{
@@ -86,12 +88,28 @@ export function CaptainBotWidget() {
   }, []);
 
   useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    setShowDragHint(window.localStorage.getItem(DRAG_HINT_STORAGE_KEY) !== "true");
+  }, []);
+
+  useEffect(() => {
     if (!position || typeof window === "undefined") {
       return;
     }
 
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(position));
   }, [position]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.localStorage.setItem(DRAG_HINT_STORAGE_KEY, showDragHint ? "false" : "true");
+  }, [showDragHint]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -196,7 +214,12 @@ export function CaptainBotWidget() {
     };
   }, [handlePointerMove, stopDragging]);
 
+  const dismissDragHint = useCallback(() => {
+    setShowDragHint(false);
+  }, []);
+
   const openWidget = () => {
+    dismissDragHint();
     setIsOpen(true);
   };
 
@@ -208,13 +231,18 @@ export function CaptainBotWidget() {
   );
 
   const completeLauncherInteraction = useCallback(() => {
+    const wasDragged = Boolean(dragStateRef.current?.moved);
     const shouldOpen = dragStateRef.current && !dragStateRef.current.moved;
     stopDragging();
+
+    if (wasDragged) {
+      dismissDragHint();
+    }
 
     if (shouldOpen) {
       openWidget();
     }
-  }, [stopDragging]);
+  }, [dismissDragHint, openWidget, stopDragging]);
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
@@ -370,8 +398,25 @@ export function CaptainBotWidget() {
               initial={{ scale: 0.92, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.92, opacity: 0 }}
-              className="flex items-center"
+              className="relative flex items-center"
             >
+              <AnimatePresence>
+                {showDragHint ? (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 6, scale: 0.96 }}
+                    className="pointer-events-none absolute bottom-full right-0 mb-3 w-max max-w-[11rem] rounded-2xl border border-gold/20 bg-[#132032]/95 px-3 py-2 text-left shadow-[0_18px_40px_rgba(2,8,23,0.35)] backdrop-blur-xl"
+                  >
+                    <div className="flex items-center gap-2 text-xs font-semibold text-gold">
+                      <GripHorizontal className="h-3.5 w-3.5" />
+                      <span>Drag me where you want</span>
+                    </div>
+                    <p className="mt-1 text-[11px] leading-relaxed text-slate-300">Tap me anytime to chat.</p>
+                    <span className="absolute -bottom-1.5 right-5 h-3 w-3 rotate-45 border-b border-r border-gold/20 bg-[#132032]/95" />
+                  </motion.div>
+                ) : null}
+              </AnimatePresence>
               <button
                 type="button"
                 onPointerDown={beginLauncherInteraction}

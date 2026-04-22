@@ -205,7 +205,7 @@ export async function applyCapturePreview(
     userId,
     workspaceId,
     type: ActivityType.CAPTURE_APPLIED,
-    title: options.captureTitle ?? "AI quick capture applied",
+    title: options.captureTitle ?? "Quick capture applied",
     description: options.captureDescription ?? preview.summary,
     entityType: "capture",
     entityId: result.parsedCapture.id,

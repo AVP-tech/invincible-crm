@@ -25,8 +25,7 @@ export async function POST(request: Request) {
       ok: true,
       preview: result.preview,
       status: result.status,
-      fallbackReason: result.fallbackReason,
-      provider: result.provider
+      fallbackReason: result.fallbackReason
     });
   } catch (error) {
     logger.error("Quick capture parse route failed.", error, {

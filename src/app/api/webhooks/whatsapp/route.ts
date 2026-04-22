@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import {
   findWhatsappIntegrationByPhoneNumberId,
+  findWhatsappIntegrationByVerifyToken,
+  markWhatsappIntegrationVerified,
+  resolveWhatsappConfig,
 } from "@/features/integrations/service";
 import { saveWhatsappMessageToCrm, saveWhatsappBotReplyToCrm } from "@/features/integrations/whatsapp-crm";
 import { generateConversationalReply } from "@/features/integrations/whatsapp-ai";
@@ -53,17 +56,33 @@ export async function GET(request: Request) {
   const token = searchParams.get("hub.verify_token");
   const challenge = searchParams.get("hub.challenge");
 
-  if (mode !== "subscribe" || !challenge || token !== env.whatsappWebhookVerifyToken) {
+  if (mode !== "subscribe" || !challenge || !token) {
     return plainTextResponse("Forbidden", 403);
   }
+
+  if (token === env.whatsappWebhookVerifyToken) {
+    return plainTextResponse(challenge, 200);
+  }
+
+  const connection = await findWhatsappIntegrationByVerifyToken(token);
+
+  if (!connection) {
+    return plainTextResponse("Forbidden", 403);
+  }
+
+  await markWhatsappIntegrationVerified(connection.id);
 
   // Meta expects ONLY the challenge string as plain text for webhook verification.
   return plainTextResponse(challenge, 200);
 }
 
-async function sendWhatsappMessage(senderPhone: string, replyText: string) {
-  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
-  const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
+async function sendWhatsappMessage(options: {
+  senderPhone: string;
+  replyText: string;
+  phoneNumberId?: string;
+  accessToken?: string;
+}) {
+  const { senderPhone, replyText, phoneNumberId, accessToken } = options;
 
   if (!phoneNumberId || !accessToken) {
     logger.warn("WhatsApp send skipped because Cloud API credentials are missing.", {
@@ -151,6 +170,8 @@ export async function POST(request: Request) {
     const firstValue = payload.entry?.[0]?.changes?.[0]?.value;
     const firstMessage = firstValue?.messages?.[0];
     const phoneNumberId = firstValue?.metadata?.phone_number_id;
+    const connection = phoneNumberId ? await findWhatsappIntegrationByPhoneNumberId(phoneNumberId) : null;
+    const whatsappConfig = connection ? resolveWhatsappConfig(connection.config) : {};
     const senderPhone = firstMessage?.from ?? "unknown";
     const messageText = firstMessage?.text?.body ?? "[no text body]";
     const contactName =
@@ -195,21 +216,23 @@ export async function POST(request: Request) {
       }
 
       // Step 3: Send the reply over WhatsApp Cloud API.
-      const sent = await sendWhatsappMessage(firstMessage.from, replyText);
+      const sent = await sendWhatsappMessage({
+        senderPhone: firstMessage.from,
+        replyText,
+        phoneNumberId: whatsappConfig.phoneNumberId ?? process.env.WHATSAPP_PHONE_NUMBER_ID ?? phoneNumberId,
+        accessToken: whatsappConfig.accessToken ?? process.env.WHATSAPP_ACCESS_TOKEN
+      });
 
       // Step 4: Persist the bot's reply so the bot remembers it next turn.
-      if (sent && contactId) {
-        const connection = await findWhatsappIntegrationByPhoneNumberId(phoneNumberId);
-        if (connection) {
-          await saveWhatsappBotReplyToCrm({
-            contactId,
-            workspaceId: connection.workspaceId,
-            ownerUserId: connection.workspace.ownerUserId,
-            replyText,
-            phoneNumberId,
-            senderPhone: firstMessage.from
-          });
-        }
+      if (sent && contactId && connection) {
+        await saveWhatsappBotReplyToCrm({
+          contactId,
+          workspaceId: connection.workspaceId,
+          ownerUserId: connection.workspace.ownerUserId,
+          replyText,
+          phoneNumberId,
+          senderPhone: firstMessage.from
+        });
       }
     } else {
       logger.info("WhatsApp AI flow skipped: no inbound message or phone number ID.", { senderPhone });

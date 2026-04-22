@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Search, Command, Users, KanbanSquare, CheckSquare, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { navigation } from "@/components/sidebar-nav";
+import { OPEN_COMMAND_PALETTE_EVENT } from "@/components/command-palette-events";
 
 export function CommandPalette() {
   const [isOpen, setIsOpen] = useState(false);
@@ -34,6 +35,13 @@ export function CommandPalette() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen]);
+
+  useEffect(() => {
+    const handleOpen = () => setIsOpen(true);
+
+    window.addEventListener(OPEN_COMMAND_PALETTE_EVENT, handleOpen);
+    return () => window.removeEventListener(OPEN_COMMAND_PALETTE_EVENT, handleOpen);
+  }, []);
 
   // Focus input when opened
   useEffect(() => {
@@ -91,7 +99,7 @@ export function CommandPalette() {
             className="fixed inset-0 z-50 bg-ink/20 backdrop-blur-sm dark:bg-black/40"
             onClick={() => setIsOpen(false)}
           />
-          <div className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh] pointer-events-none">
+          <div className="fixed inset-0 z-50 flex items-start justify-center px-2 pt-[15vh] pointer-events-none sm:px-4">
             <motion.div
               initial={{ opacity: 0, scale: 0.96, y: -10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -109,7 +117,7 @@ export function CommandPalette() {
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                 />
-                <div className="flex shrink-0 items-center gap-1 rounded-lg bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-500 dark:bg-white/10 dark:text-slate-400">
+                <div className="hidden shrink-0 items-center gap-1 rounded-lg bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-500 dark:bg-white/10 dark:text-slate-400 sm:flex">
                   <Command className="h-3 w-3" />
                   <span>K</span>
                 </div>

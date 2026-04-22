@@ -339,6 +339,10 @@ export function sanitizeWhatsappConnectionConfig(config: unknown): SanitizedWhat
   };
 }
 
+export function resolveWhatsappConfig(config: unknown) {
+  return asWhatsappConfig(config);
+}
+
 export function extractWhatsappMessageText(message: WhatsappWebhookMessage) {
   switch (message.type) {
     case "text":

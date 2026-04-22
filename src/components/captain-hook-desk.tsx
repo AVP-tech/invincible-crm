@@ -150,10 +150,10 @@ export function CaptainHookDesk() {
                 <p className="text-sm font-semibold text-white">Good prompts</p>
               </div>
               <ul className="mt-3 space-y-2 text-sm leading-6 text-slate-300">
-                <li>"What should I follow up on first today?"</li>
-                <li>"Find anything related to Rahul or BrightPath."</li>
-                <li>"Create a task to send the proposal on Friday."</li>
-                <li>"Which deals look cold right now?"</li>
+                <li>&ldquo;What should I follow up on first today?&rdquo;</li>
+                <li>&ldquo;Find anything related to Rahul or BrightPath.&rdquo;</li>
+                <li>&ldquo;Create a task to send the proposal on Friday.&rdquo;</li>
+                <li>&ldquo;Which deals look cold right now?&rdquo;</li>
               </ul>
             </div>
           </div>

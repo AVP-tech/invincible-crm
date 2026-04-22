@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CinematicIntro } from "@/components/cinematic-intro";
+import { CaptainHookSection } from "@/components/marketing/captain-hook-section";
 import { TiltCard } from "@/components/tilt-card";
 import { ScrollReveal } from "@/components/scroll-reveal";
 
@@ -357,6 +358,8 @@ export function CinematicHome({ user }: { user: HomeUser }) {
           {/* ═══════════════════════════════════════════════ */}
           {/* SECTION 2 — Why Invincible                     */}
           {/* ═══════════════════════════════════════════════ */}
+          <CaptainHookSection ctaHref={nextStepHref} userPresent={Boolean(user)} />
+
           <ScrollReveal variant="fade-up" className="py-20">
             <div className="mx-auto max-w-4xl text-center">
               <p className="cinematic-label text-gold/50">Why Invincible?</p>

@@ -10,7 +10,6 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { AnimatedStatsGrid } from "@/components/animated-stats-grid";
-import { CaptainHookDesk } from "@/components/captain-hook-desk";
 import { CometBorder } from "@/components/comet-border";
 
 export default async function DashboardPage() {
@@ -64,8 +63,6 @@ export default async function DashboardPage() {
         <StatCard label="Open tasks" value={dashboard.stats.openTasksCount} hint="Follow-ups still needing attention" />
         <StatCard label="Upcoming follow-ups" value={dashboard.stats.upcomingFollowUpsCount} hint="Next seven days of scheduled activity" />
       </AnimatedStatsGrid>
-
-      <CaptainHookDesk />
 
       <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
         <CometBorder isActive={true} radius="1.5rem" duration={3.2}>

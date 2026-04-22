@@ -95,9 +95,9 @@ export function CaptainHookDesk() {
               One place for guidance, search, and quick saves
             </h3>
             <p className="mt-3 text-sm leading-7 text-slate-300">
-              Captain Hook now stays in its own section instead of floating over
-              your workspace. Ask what needs attention, where something belongs,
-              or tell it to save a task, reminder, deal, or note.
+              Captain Hook is your embedded CRM copilot. Ask what needs
+              attention, where something belongs, or tell it to save a task,
+              reminder, deal, or note.
             </p>
           </div>
 

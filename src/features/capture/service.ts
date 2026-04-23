@@ -2,6 +2,7 @@ import { ActivityType, CaptureStatus, ParserMode, Prisma, TaskRecurrencePattern,
 import { nanoid } from "nanoid";
 import { db } from "@/lib/db";
 import { logActivity } from "@/lib/activity";
+import { resolveRelativeDate } from "@/lib/date-parser";
 import { type CapturePreview } from "@/lib/schemas";
 
 type ApplyCaptureOptions = {
@@ -33,6 +34,26 @@ async function resolveCompany(tx: Prisma.TransactionClient, workspaceId: string,
   });
 }
 
+function resolveCaptureDate(value: string | undefined, fieldLabel: string, baseDate: Date) {
+  if (!value?.trim()) {
+    return undefined;
+  }
+
+  const parsedDate = new Date(value);
+
+  if (!Number.isNaN(parsedDate.getTime())) {
+    return parsedDate;
+  }
+
+  const relativeDate = resolveRelativeDate(value, baseDate);
+
+  if (relativeDate.date) {
+    return relativeDate.date;
+  }
+
+  throw new Error(`We couldn't understand the ${fieldLabel}. Try a specific time or use morning, afternoon, or evening.`);
+}
+
 export async function applyCapturePreview(
   workspaceId: string,
   userId: string,
@@ -40,6 +61,10 @@ export async function applyCapturePreview(
   preview: CapturePreview,
   options: ApplyCaptureOptions = {}
 ) {
+  const referenceDate = new Date();
+  const expectedCloseDate = resolveCaptureDate(preview.deal?.expectedCloseDate, "deal date", referenceDate);
+  const taskDueDate = resolveCaptureDate(preview.task?.dueDate, "task date", referenceDate);
+
   const result = await db.$transaction(async (tx) => {
     const parsedCapture = await tx.parsedCapture.create({
       data: {
@@ -104,7 +129,7 @@ export async function applyCapturePreview(
             stage: preview.deal.stage,
             amount: preview.deal.amount ?? undefined,
             currency: preview.deal.currency,
-            expectedCloseDate: preview.deal.expectedCloseDate ? new Date(preview.deal.expectedCloseDate) : undefined,
+            expectedCloseDate,
             nextStep: preview.deal.nextStep ?? undefined,
             contactId: contactId ?? undefined,
             companyId: company?.id ?? undefined
@@ -122,7 +147,7 @@ export async function applyCapturePreview(
             stage: preview.deal.stage,
             amount: preview.deal.amount ?? undefined,
             currency: preview.deal.currency,
-            expectedCloseDate: preview.deal.expectedCloseDate ? new Date(preview.deal.expectedCloseDate) : undefined,
+            expectedCloseDate,
             nextStep: preview.deal.nextStep ?? undefined
           }
         });
@@ -146,7 +171,7 @@ export async function applyCapturePreview(
           where: { id: existingTask.id },
           data: {
             description: preview.task.description ?? undefined,
-            dueDate: preview.task.dueDate ? new Date(preview.task.dueDate) : undefined,
+            dueDate: taskDueDate,
             priority: preview.task.priority,
             contactId: contactId ?? undefined,
             dealId: dealId ?? undefined
@@ -161,7 +186,7 @@ export async function applyCapturePreview(
             workspaceId,
             title: preview.task.title,
             description: preview.task.description ?? undefined,
-            dueDate: preview.task.dueDate ? new Date(preview.task.dueDate) : undefined,
+            dueDate: taskDueDate,
             priority: preview.task.priority,
             recurrencePattern: preview.task.recurrencePattern ?? TaskRecurrencePattern.NONE,
             recurrenceIntervalDays:

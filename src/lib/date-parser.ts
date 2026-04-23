@@ -30,9 +30,77 @@ type DateParseResult = {
   matchedText: string | null;
 };
 
-function normalizeDateCandidate(baseDate: Date, year: number, month: number, day: number) {
+type TimeHint = {
+  hour: number;
+  matchedText: string;
+  minute: number;
+};
+
+function applyResolvedTime(date: Date, hour = 9, minute = 0) {
+  const candidate = new Date(date);
+  candidate.setHours(hour, minute, 0, 0);
+  return candidate;
+}
+
+function getTimeContext(input: string, matchIndex: number, matchLength: number) {
+  const fromMatch = input.slice(matchIndex);
+  const trailingContext = fromMatch.slice(matchLength);
+  const punctuationIndex = trailingContext.search(/[.,;!\n]/);
+  const contextEnd = punctuationIndex >= 0 ? matchLength + punctuationIndex : Math.min(fromMatch.length, matchLength + 32);
+
+  return fromMatch.slice(0, contextEnd).trim();
+}
+
+function resolveTimeHint(context: string): TimeHint | null {
+  const explicitTimeMatch = context.match(/\b(?:at\s+)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/);
+
+  if (explicitTimeMatch) {
+    const rawHour = Number(explicitTimeMatch[1]);
+    const minute = explicitTimeMatch[2] ? Number(explicitTimeMatch[2]) : 0;
+
+    if (rawHour >= 1 && rawHour <= 12 && minute >= 0 && minute <= 59) {
+      const meridiem = explicitTimeMatch[3];
+      const hour = rawHour % 12 + (meridiem === "pm" ? 12 : 0);
+
+      return {
+        hour,
+        matchedText: explicitTimeMatch[0],
+        minute
+      };
+    }
+  }
+
+  if (/\bmorning\b/.test(context)) {
+    return { hour: 8, matchedText: "morning", minute: 0 };
+  }
+
+  if (/\bafternoon\b/.test(context)) {
+    return { hour: 12, matchedText: "afternoon", minute: 0 };
+  }
+
+  if (/\bevening\b/.test(context)) {
+    return { hour: 16, matchedText: "evening", minute: 0 };
+  }
+
+  if (/\bnoon\b/.test(context)) {
+    return { hour: 12, matchedText: "noon", minute: 0 };
+  }
+
+  return null;
+}
+
+function resolveMatchedDate(date: Date, input: string, matchIndex: number, matchedText: string): DateParseResult {
+  const timeHint = resolveTimeHint(getTimeContext(input, matchIndex, matchedText.length));
+
+  return {
+    date: applyResolvedTime(date, timeHint?.hour ?? 9, timeHint?.minute ?? 0),
+    matchedText: timeHint ? `${matchedText} ${timeHint.matchedText}` : matchedText
+  };
+}
+
+function normalizeDateCandidate(baseDate: Date, year: number, month: number, day: number, hour = 9, minute = 0) {
   const candidate = new Date(baseDate);
-  candidate.setHours(9, 0, 0, 0);
+  candidate.setHours(hour, minute, 0, 0);
   candidate.setFullYear(year, month, day);
 
   if (candidate.getMonth() !== month || candidate.getDate() !== day) {
@@ -42,10 +110,10 @@ function normalizeDateCandidate(baseDate: Date, year: number, month: number, day
   return candidate;
 }
 
-function resolveCalendarDate(baseDate: Date, day: number, month: number, year?: number) {
+function resolveCalendarDate(baseDate: Date, day: number, month: number, year?: number, hour = 9, minute = 0) {
   const today = startOfDay(baseDate);
   const candidateYear = year ?? today.getFullYear();
-  const initialCandidate = normalizeDateCandidate(today, candidateYear, month, day);
+  const initialCandidate = normalizeDateCandidate(today, candidateYear, month, day, hour, minute);
 
   if (!initialCandidate) {
     return null;
@@ -59,71 +127,66 @@ function resolveCalendarDate(baseDate: Date, day: number, month: number, year?: 
     return initialCandidate;
   }
 
-  return normalizeDateCandidate(today, candidateYear + 1, month, day);
+  return normalizeDateCandidate(today, candidateYear + 1, month, day, hour, minute);
 }
 
 export function resolveRelativeDate(input: string, baseDate = new Date()): DateParseResult {
   const normalized = input.toLowerCase();
   const today = startOfDay(baseDate);
 
-  if (normalized.includes("today")) {
-    return { date: today, matchedText: "today" };
+  const todayMatch = normalized.match(/\btoday\b/);
+
+  if (todayMatch?.index !== undefined) {
+    return resolveMatchedDate(today, normalized, todayMatch.index, todayMatch[0]);
   }
 
-  if (normalized.includes("day after tomorrow")) {
-    return { date: addDays(today, 2), matchedText: "day after tomorrow" };
+  const dayAfterTomorrowMatch = normalized.match(/\bday after tomorrow\b/);
+
+  if (dayAfterTomorrowMatch?.index !== undefined) {
+    return resolveMatchedDate(addDays(today, 2), normalized, dayAfterTomorrowMatch.index, dayAfterTomorrowMatch[0]);
   }
 
-  if (normalized.includes("tomorrow")) {
-    return { date: addDays(today, 1), matchedText: "tomorrow" };
+  const tomorrowMatch = normalized.match(/\btomorrow\b/);
+
+  if (tomorrowMatch?.index !== undefined) {
+    return resolveMatchedDate(addDays(today, 1), normalized, tomorrowMatch.index, tomorrowMatch[0]);
   }
 
   const inDaysMatch = normalized.match(/\bin (\d+)\s+days?\b/);
 
-  if (inDaysMatch) {
+  if (inDaysMatch?.index !== undefined) {
     const amount = Number(inDaysMatch[1]);
-
-    return {
-      date: addDays(today, amount),
-      matchedText: inDaysMatch[0]
-    };
+    return resolveMatchedDate(addDays(today, amount), normalized, inDaysMatch.index, inDaysMatch[0]);
   }
 
   const nextWeekdayMatch = normalized.match(/\bnext (monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/);
 
-  if (nextWeekdayMatch) {
+  if (nextWeekdayMatch?.index !== undefined) {
     const day = weekdayMap[nextWeekdayMatch[1]];
-
-    return {
-      date: nextDay(addDays(today, 6), day as 0 | 1 | 2 | 3 | 4 | 5 | 6),
-      matchedText: nextWeekdayMatch[0]
-    };
+    return resolveMatchedDate(nextDay(addDays(today, 6), day as 0 | 1 | 2 | 3 | 4 | 5 | 6), normalized, nextWeekdayMatch.index, nextWeekdayMatch[0]);
   }
 
   const weekdayMatch = normalized.match(/\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/);
 
-  if (weekdayMatch) {
+  if (weekdayMatch?.index !== undefined) {
     const day = weekdayMap[weekdayMatch[1]];
-
-    return {
-      date: nextDay(today, day as 0 | 1 | 2 | 3 | 4 | 5 | 6),
-      matchedText: weekdayMatch[0]
-    };
+    return resolveMatchedDate(nextDay(today, day as 0 | 1 | 2 | 3 | 4 | 5 | 6), normalized, weekdayMatch.index, weekdayMatch[0]);
   }
 
   const numericDateMatch = normalized.match(/\b(?:on|by)?\s*(\d{1,2})[/-](\d{1,2})(?:[/-](\d{2,4}))?\b/);
 
-  if (numericDateMatch) {
+  if (numericDateMatch?.index !== undefined) {
     const day = Number(numericDateMatch[1]);
     const month = Number(numericDateMatch[2]) - 1;
     const rawYear = numericDateMatch[3] ? Number(numericDateMatch[3]) : undefined;
     const year = rawYear ? (rawYear < 100 ? 2000 + rawYear : rawYear) : undefined;
-    const date = resolveCalendarDate(today, day, month, year);
+    const timeHint = resolveTimeHint(getTimeContext(normalized, numericDateMatch.index, numericDateMatch[0].length));
+    const date = resolveCalendarDate(today, day, month, year, timeHint?.hour ?? 9, timeHint?.minute ?? 0);
 
     if (date) {
       return {
         date,
-        matchedText: numericDateMatch[0]
+        matchedText: timeHint ? `${numericDateMatch[0]} ${timeHint.matchedText}` : numericDateMatch[0]
       };
     }
   }
@@ -132,16 +195,17 @@ export function resolveRelativeDate(input: string, baseDate = new Date()): DateP
     /\b(?:on|by)?\s*(\d{1,2})(?:st|nd|rd|th)?\s+(january|february|march|april|may|june|july|august|september|october|november|december)(?:\s+(\d{4}))?\b/
   );
 
-  if (dayMonthMatch) {
+  if (dayMonthMatch?.index !== undefined) {
     const day = Number(dayMonthMatch[1]);
     const month = monthMap[dayMonthMatch[2]];
     const year = dayMonthMatch[3] ? Number(dayMonthMatch[3]) : undefined;
-    const date = resolveCalendarDate(today, day, month, year);
+    const timeHint = resolveTimeHint(getTimeContext(normalized, dayMonthMatch.index, dayMonthMatch[0].length));
+    const date = resolveCalendarDate(today, day, month, year, timeHint?.hour ?? 9, timeHint?.minute ?? 0);
 
     if (date) {
       return {
         date,
-        matchedText: dayMonthMatch[0]
+        matchedText: timeHint ? `${dayMonthMatch[0]} ${timeHint.matchedText}` : dayMonthMatch[0]
       };
     }
   }
@@ -150,16 +214,17 @@ export function resolveRelativeDate(input: string, baseDate = new Date()): DateP
     /\b(?:on|by)?\s*(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{1,2})(?:st|nd|rd|th)?(?:\s+(\d{4}))?\b/
   );
 
-  if (monthDayMatch) {
+  if (monthDayMatch?.index !== undefined) {
     const month = monthMap[monthDayMatch[1]];
     const day = Number(monthDayMatch[2]);
     const year = monthDayMatch[3] ? Number(monthDayMatch[3]) : undefined;
-    const date = resolveCalendarDate(today, day, month, year);
+    const timeHint = resolveTimeHint(getTimeContext(normalized, monthDayMatch.index, monthDayMatch[0].length));
+    const date = resolveCalendarDate(today, day, month, year, timeHint?.hour ?? 9, timeHint?.minute ?? 0);
 
     if (date) {
       return {
         date,
-        matchedText: monthDayMatch[0]
+        matchedText: timeHint ? `${monthDayMatch[0]} ${timeHint.matchedText}` : monthDayMatch[0]
       };
     }
   }

@@ -81,7 +81,31 @@ function convertNullsToUndefined(value: unknown): unknown {
   return value;
 }
 
-function normalizeOpenAiCapturePayload(value: unknown) {
+function normalizeCaptureDateValue(value: unknown, baseDate: Date) {
+  const normalized = convertNullsToUndefined(value);
+
+  if (typeof normalized !== "string") {
+    return normalized;
+  }
+
+  const trimmed = normalized.trim();
+
+  if (!trimmed) {
+    return undefined;
+  }
+
+  const parsedDate = new Date(trimmed);
+
+  if (!Number.isNaN(parsedDate.getTime())) {
+    return parsedDate.toISOString();
+  }
+
+  const relativeDate = resolveRelativeDate(trimmed, baseDate);
+
+  return relativeDate.date ? relativeDate.date.toISOString() : trimmed;
+}
+
+function normalizeOpenAiCapturePayload(value: unknown, baseDate: Date) {
   if (!isPlainObject(value)) {
     return convertNullsToUndefined(value);
   }
@@ -118,9 +142,17 @@ function normalizeOpenAiCapturePayload(value: unknown) {
     };
   }
 
+  if (isPlainObject(normalized.deal) && !isMissingModelValue(normalized.deal.expectedCloseDate)) {
+    normalized.deal = {
+      ...normalized.deal,
+      expectedCloseDate: normalizeCaptureDateValue(normalized.deal.expectedCloseDate, baseDate)
+    };
+  }
+
   if (isPlainObject(normalized.task)) {
     normalized.task = {
       ...normalized.task,
+      ...(normalized.task.dueDate !== undefined ? { dueDate: normalizeCaptureDateValue(normalized.task.dueDate, baseDate) } : {}),
       ...(isMissingModelValue(normalized.task.priority) ? { priority: TaskPriority.MEDIUM } : {}),
       ...(isMissingModelValue(normalized.task.status) ? { status: TaskStatus.OPEN } : {}),
       ...(isMissingModelValue(normalized.task.recurrencePattern)
@@ -475,7 +507,7 @@ async function parseWithOpenAi(input: string, baseDate = new Date()) {
       });
       return { preview: null };
     }
-    const payload = normalizeOpenAiCapturePayload(JSON.parse(raw));
+    const payload = normalizeOpenAiCapturePayload(JSON.parse(raw), baseDate);
     const parsed = formatCaptureSchemaIssues(payload);
     if (!parsed.success) {
       logger.warn("OpenAI capture parse returned invalid JSON for the schema.", {

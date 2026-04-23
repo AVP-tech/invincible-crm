@@ -29,6 +29,11 @@ type CaptureApplyResult = {
   noteId?: string | null;
 };
 
+type AmbiguousTimeHint = {
+  defaultTime: string;
+  label: string;
+};
+
 function withContactDefaults(contact: CapturePreview["contact"]) {
   return {
     tags: contact?.tags ?? [],
@@ -53,8 +58,85 @@ function withTaskDefaults(task: CapturePreview["task"]) {
   };
 }
 
-function formatDateInputValue(value?: string) {
-  return value ? value.slice(0, 10) : "";
+function formatDateTimeInputValue(value?: string) {
+  if (!value) {
+    return "";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getDate()}`.padStart(2, "0");
+  const hours = `${date.getHours()}`.padStart(2, "0");
+  const minutes = `${date.getMinutes()}`.padStart(2, "0");
+
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
+function toIsoDateTime(value: string) {
+  if (!value) {
+    return undefined;
+  }
+
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
+}
+
+function buildDefaultTimeLabel(input: string) {
+  const normalized = input.toLowerCase();
+
+  if (normalized.includes("morning")) {
+    return "8:00 AM";
+  }
+
+  if (normalized.includes("afternoon") || normalized.includes("noon")) {
+    return "12:00 PM";
+  }
+
+  if (normalized.includes("evening") || normalized.includes("tonight")) {
+    return "4:00 PM";
+  }
+
+  return "9:00 AM";
+}
+
+function extractAmbiguousTimeHints(input: string): AmbiguousTimeHint[] {
+  const clauses = input
+    .split(/[.!?\n]+/)
+    .map((clause) => clause.trim())
+    .filter(Boolean);
+  const dateReferencePattern =
+    /\b(?:today|tomorrow|day after tomorrow|in\s+\d+\s+days?|next\s+(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/;
+  const calendarDatePattern =
+    /\b(?:\d{1,2}[/-]\d{1,2}(?:[/-]\d{2,4})?|\d{1,2}(?:st|nd|rd|th)?\s+(?:january|february|march|april|may|june|july|august|september|october|november|december)|(?:january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{1,2}(?:st|nd|rd|th)?)\b/;
+  const explicitTimePattern = /\b\d{1,2}(?::\d{2})?\s*(?:am|pm)\b/;
+  const fuzzyTimePattern = /\b(?:morning|afternoon|evening|noon|tonight)\b/;
+  const seen = new Set<string>();
+
+  return clauses.flatMap((clause) => {
+    const normalized = clause.toLowerCase();
+    const hasDateReference = dateReferencePattern.test(normalized) || calendarDatePattern.test(normalized);
+    const hasExplicitTime = explicitTimePattern.test(normalized);
+    const hasFuzzyTime = fuzzyTimePattern.test(normalized);
+
+    if ((!hasFuzzyTime && (!hasDateReference || hasExplicitTime)) || seen.has(clause)) {
+      return [];
+    }
+
+    seen.add(clause);
+
+    return [
+      {
+        defaultTime: buildDefaultTimeLabel(clause),
+        label: clause
+      }
+    ];
+  });
 }
 
 function getValidationIssues(preview: CapturePreview | null) {
@@ -133,6 +215,11 @@ export function CaptureForm({ defaultInput = "" }: CaptureFormProps) {
   const [isParsing, setIsParsing] = useState(false);
   const [isApplying, setIsApplying] = useState(false);
   const [savedSummary, setSavedSummary] = useState<string | null>(null);
+  const [showTimeConfirmation, setShowTimeConfirmation] = useState(false);
+  const [timeConfirmationAccepted, setTimeConfirmationAccepted] = useState(false);
+  const ambiguousTimeHints = extractAmbiguousTimeHints(input);
+  const needsTimeConfirmation = Boolean(preview && ambiguousTimeHints.length > 0);
+  const taskDateFieldId = "capture-task-due-date";
 
   const validationIssues = getValidationIssues(preview);
   const blockedSaveReason = getBlockedSaveReason(validationIssues);
@@ -188,6 +275,7 @@ export function CaptureForm({ defaultInput = "" }: CaptureFormProps) {
           });
           const data = await response.json();
           if (data.text) {
+             setTimeConfirmationAccepted(false);
              setInput((prev) => (prev + " " + data.text).trim());
           } else {
              toast.error(data.error || "Failed to transcribe audio.");
@@ -223,6 +311,8 @@ export function CaptureForm({ defaultInput = "" }: CaptureFormProps) {
     setPreview(null);
     setCaptureMeta({ status: "idle" });
     setIsApplying(false);
+    setShowTimeConfirmation(false);
+    setTimeConfirmationAccepted(false);
     setInput("");
   }
 
@@ -230,11 +320,20 @@ export function CaptureForm({ defaultInput = "" }: CaptureFormProps) {
     setPreview((current) => (current ? updater(current) : current));
   }
 
+  function reviewDetectedTimes() {
+    setShowTimeConfirmation(false);
+    window.requestAnimationFrame(() => {
+      document.getElementById(taskDateFieldId)?.focus();
+    });
+  }
+
   async function parseCapture() {
     setIsParsing(true);
     setSavedSummary(null);
     setPreview(null);
     setCaptureMeta({ status: "idle" });
+    setShowTimeConfirmation(false);
+    setTimeConfirmationAccepted(false);
 
     try {
       const response = await fetch("/api/capture/parse", {
@@ -262,7 +361,7 @@ export function CaptureForm({ defaultInput = "" }: CaptureFormProps) {
     }
   }
 
-  async function applyCapture() {
+  async function submitCapture() {
     if (!preview) {
       return;
     }
@@ -292,6 +391,19 @@ export function CaptureForm({ defaultInput = "" }: CaptureFormProps) {
     }
   }
 
+  async function applyCapture() {
+    if (!preview) {
+      return;
+    }
+
+    if (needsTimeConfirmation && !timeConfirmationAccepted) {
+      setShowTimeConfirmation(true);
+      return;
+    }
+
+    await submitCapture();
+  }
+
   return (
     <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
       <CometBorder isActive={isParsing || input.length > 0} radius="1rem" duration={2.6}>
@@ -310,7 +422,11 @@ export function CaptureForm({ defaultInput = "" }: CaptureFormProps) {
               className="min-h-[240px]"
               placeholder={"e.g. \"Called Priya, she's interested, send proposal by Friday\""}
               value={input}
-              onChange={(event) => setInput(event.target.value)}
+              onChange={(event) => {
+                setTimeConfirmationAccepted(false);
+                setShowTimeConfirmation(false);
+                setInput(event.target.value);
+              }}
             />
 
             <div className="flex flex-wrap gap-3">
@@ -329,7 +445,14 @@ export function CaptureForm({ defaultInput = "" }: CaptureFormProps) {
                 {isTranscribing ? "Transcribing..." : isListening ? "Stop & Save" : "Dictate"}
               </Button>
 
-              <Button variant="ghost" onClick={() => setInput("Called Priya, she's interested, send proposal by Friday")}>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setTimeConfirmationAccepted(false);
+                  setShowTimeConfirmation(false);
+                  setInput("Called Priya, she's interested, send proposal by Friday");
+                }}
+              >
                 Try sample
               </Button>
             </div>
@@ -415,6 +538,12 @@ export function CaptureForm({ defaultInput = "" }: CaptureFormProps) {
                   <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{preview.suggestedUpdates.join(" | ")}</p>
                 ) : null}
               </div>
+
+              {needsTimeConfirmation ? (
+                <div className="rounded-3xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
+                  We found time phrases like morning, evening, or date-only deadlines in this note. Saving will open a quick confirmation popup so the user can review the exact time first.
+                </div>
+              ) : null}
 
               {!hasStructuredFields(preview) ? (
                 <div className="surface-soft rounded-4xl p-6 text-sm text-slate-600 dark:text-slate-300">
@@ -547,22 +676,27 @@ export function CaptureForm({ defaultInput = "" }: CaptureFormProps) {
                       </div>
                       <div className="grid gap-3 sm:grid-cols-2">
                         <div className="space-y-2">
-                          <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-400">Due date</p>
+                          <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-400">Due date & time</p>
                           <Input
+                            id={taskDateFieldId}
                             lang="en-IN"
-                            type="date"
-                            value={formatDateInputValue(preview.task.dueDate)}
-                            onChange={(event) =>
+                            type="datetime-local"
+                            value={formatDateTimeInputValue(preview.task.dueDate)}
+                            onChange={(event) => {
+                              setShowTimeConfirmation(false);
+                              setTimeConfirmationAccepted(true);
                               updatePreview((current) => ({
                                 ...current,
                                 task: {
                                   ...withTaskDefaults(current.task),
-                                  dueDate: event.target.value ? new Date(`${event.target.value}T09:00:00`).toISOString() : undefined
+                                  dueDate: toIsoDateTime(event.target.value)
                                 }
-                              }))
-                            }
+                              }));
+                            }}
                           />
-                          <p className="text-xs text-slate-500 dark:text-slate-400">Format: DD-MM-YYYY</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">
+                            Morning defaults to 8:00 AM, afternoon to 12:00 PM, evening to 4:00 PM. You can edit the exact time here.
+                          </p>
                         </div>
                         <div className="space-y-2">
                           <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-400">Priority</p>
@@ -632,6 +766,67 @@ export function CaptureForm({ defaultInput = "" }: CaptureFormProps) {
           )}
         </CardContent>
       </Card>
+
+      {showTimeConfirmation ? (
+        <TimeConfirmationDialog
+          hints={ambiguousTimeHints}
+          isSaving={isApplying}
+          onContinue={() => {
+            setTimeConfirmationAccepted(true);
+            setShowTimeConfirmation(false);
+            void submitCapture();
+          }}
+          onReview={reviewDetectedTimes}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+function TimeConfirmationDialog({
+  hints,
+  isSaving,
+  onContinue,
+  onReview
+}: {
+  hints: AmbiguousTimeHint[];
+  isSaving: boolean;
+  onContinue: () => void;
+  onReview: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0b1220]/55 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-lg rounded-[28px] border border-black/10 bg-white p-6 shadow-2xl dark:border-white/10 dark:bg-slate-950">
+        <p className="text-sm font-semibold uppercase tracking-[0.3em] text-moss">Confirm time</p>
+        <h3 className="mt-3 text-2xl font-semibold text-ink">This note uses fuzzy timing.</h3>
+        <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
+          We spotted phrases like morning, evening, or date-only deadlines. The app has suggested times for them, but the user should confirm before this gets saved.
+        </p>
+
+        <div className="mt-5 space-y-3">
+          {hints.map((hint) => (
+            <div
+              key={hint.label}
+              className="rounded-3xl border border-black/5 bg-sand/60 px-4 py-3 text-sm text-slate-700 dark:border-white/10 dark:bg-slate-900/70 dark:text-slate-200"
+            >
+              <p className="font-medium text-ink dark:text-white">{hint.label}</p>
+              <p className="mt-1 text-xs uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">
+                Suggested time: {hint.defaultTime}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <Button variant="secondary" onClick={onReview}>
+            Review dates first
+          </Button>
+          <Button onClick={onContinue} disabled={isSaving}>
+            {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            Continue with suggested times
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

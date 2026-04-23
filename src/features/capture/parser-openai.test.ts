@@ -159,6 +159,45 @@ describe("parseCaptureResult OpenAI parsing", () => {
     );
   });
 
+  it("normalizes natural-language due dates from OpenAI into ISO timestamps", async () => {
+    mocks.createCompletion.mockResolvedValue({
+      choices: [
+        {
+          message: {
+            content: JSON.stringify({
+              actionType: "create",
+              parserMode: "AI",
+              summary: "Follow up with Rahul from TechSoft",
+              confidence: 0.88,
+              missingFields: [],
+              suggestedUpdates: [],
+              contact: {
+                name: "Rahul",
+                companyName: "TechSoft",
+                tags: []
+              },
+              task: {
+                title: "Follow up with Rahul",
+                dueDate: "Thursday morning",
+                priority: "MEDIUM",
+                status: "OPEN"
+              }
+            })
+          }
+        }
+      ]
+    });
+
+    const result = await parseCaptureResult(
+      "user-1",
+      "Follow up with Rahul from TechSoft on Thursday morning",
+      new Date("2026-04-01T09:00:00.000Z")
+    );
+
+    expect(result.status).toBe("ready");
+    expect(result.preview.task?.dueDate).toBe("2026-04-02T08:00:00.000Z");
+  });
+
   it("logs schema issues when OpenAI returns an invalid capture payload", async () => {
     mocks.createCompletion.mockResolvedValue({
       choices: [

@@ -21,11 +21,16 @@ export async function POST(request: Request) {
     return jsonError(parsed.error.issues[0]?.message ?? "Invalid capture confirmation");
   }
 
-  const result = await applyCapturePreview(user.workspaceId, user.id, parsed.data.input, parsed.data.preview);
+  try {
+    const result = await applyCapturePreview(user.workspaceId, user.id, parsed.data.input, parsed.data.preview);
 
-  return NextResponse.json({
-    ok: true,
-    result,
-    redirectTo: result.contactId ? `/contacts/${result.contactId}` : result.dealId ? `/deals/${result.dealId}` : "/dashboard"
-  });
+    return NextResponse.json({
+      ok: true,
+      result,
+      redirectTo: result.contactId ? `/contacts/${result.contactId}` : result.dealId ? `/deals/${result.dealId}` : "/dashboard"
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Could not save the capture";
+    return jsonError(message, 400);
+  }
 }

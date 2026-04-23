@@ -9,6 +9,7 @@ describe("resolveRelativeDate", () => {
 
     expect(result.matchedText).toBe("tomorrow");
     expect(result.date?.getDate()).toBe(2);
+    expect(result.date?.getHours()).toBe(9);
   });
 
   it("parses next weekday", () => {
@@ -24,5 +25,23 @@ describe("resolveRelativeDate", () => {
     expect(result.matchedText).toBe("on 12 april");
     expect(result.date?.getDate()).toBe(12);
     expect(result.date?.getMonth()).toBe(3);
+  });
+
+  it("defaults morning, afternoon, and evening to business-friendly hours", () => {
+    const morning = resolveRelativeDate("Check invoice status on Thursday morning", baseDate);
+    const afternoon = resolveRelativeDate("Follow up next Monday afternoon", baseDate);
+    const evening = resolveRelativeDate("Send proposal Friday evening", baseDate);
+
+    expect(morning.date?.getHours()).toBe(8);
+    expect(afternoon.date?.getHours()).toBe(12);
+    expect(evening.date?.getHours()).toBe(16);
+  });
+
+  it("captures explicit times attached to relative dates", () => {
+    const result = resolveRelativeDate("Follow up with Rahul tomorrow at 10 AM", baseDate);
+
+    expect(result.date?.getDate()).toBe(2);
+    expect(result.date?.getHours()).toBe(10);
+    expect(result.date?.getMinutes()).toBe(0);
   });
 });

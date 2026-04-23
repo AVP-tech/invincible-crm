@@ -1,5 +1,5 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, TaskPriority, TaskRecurrencePattern, TaskStatus } from "@prisma/client";
 import { applyCapturePreview } from "@/features/capture/service";
 import { fallbackParseCapture } from "@/features/capture/parser";
 
@@ -87,5 +87,57 @@ describe("applyCapturePreview", () => {
     expect(notes[0]?.content).toContain("budget 80k");
     expect(captures).toHaveLength(1);
     expect(activities.length).toBeGreaterThanOrEqual(4);
+  });
+
+  it("coerces natural-language task dates before saving", async () => {
+    const user = await prisma.user.create({
+      data: {
+        name: "Test User",
+        email: "test-natural-dates@example.com",
+        passwordHash: "hashed"
+      }
+    });
+    const workspace = await prisma.workspace.create({
+      data: {
+        ownerUserId: user.id,
+        name: "Test Workspace"
+      }
+    });
+
+    await prisma.workspaceMembership.create({
+      data: {
+        workspaceId: workspace.id,
+        userId: user.id,
+        role: "OWNER"
+      }
+    });
+
+    const result = await applyCapturePreview(workspace.id, user.id, "Send the proposal to Meera by Friday evening", {
+      actionType: "create",
+      parserMode: "AI",
+      summary: "Create a proposal follow-up for Meera",
+      confidence: 0.86,
+      missingFields: [],
+      suggestedUpdates: [],
+      contact: {
+        name: "Meera",
+        tags: []
+      },
+      task: {
+        title: "Send proposal to Meera",
+        dueDate: "Friday evening",
+        priority: TaskPriority.MEDIUM,
+        status: TaskStatus.OPEN,
+        recurrencePattern: TaskRecurrencePattern.NONE
+      },
+      note: "Send the proposal to Meera by Friday evening"
+    });
+
+    const task = await prisma.task.findUnique({
+      where: { id: result.taskId ?? "" }
+    });
+
+    expect(task?.dueDate).toBeTruthy();
+    expect(task?.dueDate?.getHours()).toBe(16);
   });
 });

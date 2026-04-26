@@ -10,14 +10,51 @@ export function toArray<T>(value: T[] | null | undefined): T[] {
   return Array.isArray(value) ? value : [];
 }
 
+const intlWithSupportedValues = Intl as typeof Intl & {
+  supportedValuesOf?: (key: string) => string[];
+};
+
+const commonCurrencyCodes = ["INR", "USD", "EUR", "GBP", "AED", "SGD", "AUD", "CAD"];
+
+export function normalizeCurrencyCode(currency?: string | null) {
+  const normalized = currency?.trim().toUpperCase();
+  return normalized || "INR";
+}
+
+export const supportedCurrencyCodes = (() => {
+  const discoveredCodes = intlWithSupportedValues.supportedValuesOf?.("currency") ?? ["INR", "USD", "EUR", "GBP", "AED"];
+  const uniqueCodes = Array.from(new Set([...commonCurrencyCodes, ...discoveredCodes.map((code) => code.toUpperCase())]));
+
+  return uniqueCodes.sort((left, right) => {
+    const leftPriority = commonCurrencyCodes.indexOf(left);
+    const rightPriority = commonCurrencyCodes.indexOf(right);
+
+    if (leftPriority !== -1 || rightPriority !== -1) {
+      if (leftPriority === -1) return 1;
+      if (rightPriority === -1) return -1;
+      return leftPriority - rightPriority;
+    }
+
+    return left.localeCompare(right);
+  });
+})();
+
 export function formatCurrency(amount?: number | null, currency = "INR") {
   if (amount == null) return "Not set";
 
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency,
-    maximumFractionDigits: 0
-  }).format(amount);
+  const normalizedCurrency = normalizeCurrencyCode(currency);
+
+  try {
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: normalizedCurrency,
+      maximumFractionDigits: 0
+    }).format(amount);
+  } catch {
+    return `${normalizedCurrency} ${new Intl.NumberFormat("en-IN", {
+      maximumFractionDigits: 0
+    }).format(amount)}`;
+  }
 }
 
 export function formatDate(date?: Date | string | null) {

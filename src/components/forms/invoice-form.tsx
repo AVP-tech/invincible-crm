@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { cn, formatCurrency, titleCase } from "@/lib/utils";
+import { cn, formatCurrency, normalizeCurrencyCode, supportedCurrencyCodes, titleCase } from "@/lib/utils";
 
 type InvoiceFormProps = {
   canManage: boolean;
@@ -117,7 +117,13 @@ export function InvoiceForm({ canManage, contacts, deals }: InvoiceFormProps) {
           <Input type="number" value={amount} onChange={(event) => setAmount(event.target.value)} disabled={!canManage} />
         </Field>
         <Field label="Currency">
-          <Input value={currency} onChange={(event) => setCurrency(event.target.value)} disabled={!canManage} />
+          <Select value={currency} onChange={(event) => setCurrency(event.target.value)} disabled={!canManage}>
+            {supportedCurrencyCodes.map((currencyCode) => (
+              <option key={currencyCode} value={currencyCode}>
+                {currencyCode}
+              </option>
+            ))}
+          </Select>
         </Field>
         <Field label="Status">
           <Select value={status} onChange={(event) => setStatus(event.target.value as InvoiceStatus)} disabled={!canManage}>
@@ -167,7 +173,11 @@ export function InvoiceForm({ canManage, contacts, deals }: InvoiceFormProps) {
               <SnapshotRow
                 icon={Sparkles}
                 label="Amount"
-                value={parsedAmount && Number.isFinite(parsedAmount) ? formatCurrency(parsedAmount, currency || "INR") : "Waiting for amount"}
+                value={
+                  parsedAmount && Number.isFinite(parsedAmount)
+                    ? formatCurrency(parsedAmount, normalizeCurrencyCode(currency))
+                    : "Waiting for amount"
+                }
               />
               <SnapshotRow
                 icon={CalendarDays}
@@ -180,7 +190,7 @@ export function InvoiceForm({ canManage, contacts, deals }: InvoiceFormProps) {
                 value={[
                   selectedContact ? `Contact: ${selectedContact.name}` : null,
                   selectedDeal ? `Deal: ${selectedDeal.title}` : null
-                ].filter(Boolean).join(" • ") || "No CRM record linked yet"}
+                ].filter(Boolean).join(" | ") || "No CRM record linked yet"}
               />
             </div>
 
@@ -238,6 +248,9 @@ export function InvoiceForm({ canManage, contacts, deals }: InvoiceFormProps) {
           </p>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             Link the contact or deal whenever possible so finance, follow-ups, and relationship history stay in one thread.
+          </p>
+          <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
+            Choose from the full currency list so finance formatting stays stable everywhere.
           </p>
         </div>
         <Button type="submit" disabled={!canManage || isSubmitting}>

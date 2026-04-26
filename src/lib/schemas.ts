@@ -29,6 +29,18 @@ const optionalDateString = z
   .transform((value) => value || undefined)
   .optional();
 
+const optionalCurrencyCode = z.preprocess(
+  (value) => {
+    if (typeof value !== "string") {
+      return value;
+    }
+
+    const normalized = value.trim().toUpperCase();
+    return normalized || undefined;
+  },
+  z.string().regex(/^[A-Z]{3}$/, "Use a 3-letter currency code like INR or USD").optional()
+);
+
 export const authLoginSchema = z.object({
   email: z.email(),
   password: z.string().min(8, "Password should be at least 8 characters")
@@ -69,7 +81,7 @@ export const dealInputSchema = z.object({
       const numericValue = typeof value === "number" ? value : Number(value);
       return Number.isFinite(numericValue) ? numericValue : undefined;
     }),
-  currency: optionalString,
+  currency: optionalCurrencyCode,
   expectedCloseDate: optionalDateString,
   nextStep: optionalString
 });
@@ -201,7 +213,7 @@ export const invoiceInputSchema = z.object({
     .union([z.string(), z.number()])
     .transform((value) => Number(value))
     .refine((value) => Number.isFinite(value) && value > 0, "Enter a valid amount"),
-  currency: optionalString,
+  currency: optionalCurrencyCode,
   status: z.nativeEnum(InvoiceStatus).default(InvoiceStatus.DRAFT),
   issueDate: optionalDateString,
   dueDate: optionalDateString,

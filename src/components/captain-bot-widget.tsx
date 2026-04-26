@@ -218,11 +218,6 @@ export function CaptainBotWidget() {
     setShowDragHint(false);
   }, []);
 
-  const openWidget = () => {
-    dismissDragHint();
-    setIsOpen(true);
-  };
-
   const beginLauncherInteraction = useCallback(
     (event: React.PointerEvent<HTMLButtonElement>) => {
       beginDragging(event);
@@ -240,9 +235,10 @@ export function CaptainBotWidget() {
     }
 
     if (shouldOpen) {
-      openWidget();
+      dismissDragHint();
+      setIsOpen(true);
     }
-  }, [dismissDragHint, openWidget, stopDragging]);
+  }, [dismissDragHint, stopDragging]);
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;

@@ -32,10 +32,12 @@ export async function POST(request: Request) {
   const updateData: {
     name: string;
     email: string;
+    phone?: string;
     passwordHash?: string;
   } = {
     name: parsed.data.name,
-    email: parsed.data.email
+    email: parsed.data.email,
+    phone: parsed.data.phone
   };
 
   if (parsed.data.newPassword) {

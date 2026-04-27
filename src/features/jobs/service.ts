@@ -1,6 +1,6 @@
 import { JobStatus, JobType, Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
-import { ingestWhatsappWebhook, syncEmailConnection } from "@/features/integrations/service";
+import { ingestWhatsappWebhook, syncEmailConnection, sendOutboundWhatsappMessage } from "@/features/integrations/service";
 
 export async function listBackgroundJobs(workspaceId: string) {
   return db.backgroundJob.findMany({
@@ -33,18 +33,20 @@ export async function enqueueBackgroundJob(
   workspaceId: string,
   type: JobType,
   payload: Prisma.InputJsonValue,
-  integrationConnectionId?: string
+  integrationConnectionId?: string,
+  scheduledFor?: Date
 ) {
   const job = await db.backgroundJob.create({
     data: {
       workspaceId,
       integrationConnectionId,
       type,
-      payload
+      payload,
+      scheduledFor: scheduledFor ?? new Date()
     }
   });
 
-  if (process.env.RUN_JOBS_INLINE !== "false") {
+  if (process.env.RUN_JOBS_INLINE !== "false" && (!scheduledFor || scheduledFor <= new Date())) {
     return (await processBackgroundJob(job.id)) ?? job;
   }
 
@@ -86,6 +88,30 @@ export async function processBackgroundJob(jobId: string) {
       case JobType.SYNC_SPREADSHEET:
       case JobType.RUN_AUTOMATION:
         break;
+      case JobType.SEND_TASK_REMINDER: {
+        const payload = job.payload as { taskId: string };
+        const task = await db.task.findUnique({
+          where: { id: payload.taskId },
+          include: { user: true }
+        });
+        
+        if (!task || task.status === "COMPLETED" || !task.user.phone) {
+          break;
+        }
+
+        const whatsappConnection = await db.integrationConnection.findFirst({
+          where: { workspaceId: job.workspaceId, provider: "WHATSAPP_META", status: "CONNECTED" }
+        });
+
+        if (whatsappConnection) {
+          await sendOutboundWhatsappMessage(
+            whatsappConnection.id,
+            task.user.phone,
+            `⏰ Reminder: You have a task due - "${task.title}"`
+          );
+        }
+        break;
+      }
     }
 
     return db.backgroundJob.update({

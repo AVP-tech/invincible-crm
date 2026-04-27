@@ -28,7 +28,7 @@ export default async function SettingsPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <ProfileForm defaultValues={{ name: user.name, email: user.email }} />
+            <ProfileForm defaultValues={{ name: user.name, email: user.email, phone: user.phone }} />
           </CardContent>
         </Card>
 

@@ -684,6 +684,46 @@ export async function findWhatsappIntegrationByVerifyToken(verifyToken: string) 
   );
 }
 
+export async function sendOutboundWhatsappMessage(connectionId: string, toPhone: string, message: string) {
+  const connection = await db.integrationConnection.findUnique({
+    where: { id: connectionId }
+  });
+
+  if (!connection || connection.provider !== "WHATSAPP_META") {
+    throw new Error("WhatsApp integration not found or invalid.");
+  }
+
+  const config = asWhatsappConfig(connection.config);
+
+  if (!config.phoneNumberId || !config.accessToken) {
+    throw new Error("WhatsApp integration is missing credentials.");
+  }
+
+  const response = await fetch(`https://graph.facebook.com/v22.0/${encodeURIComponent(config.phoneNumberId)}/messages`, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${config.accessToken}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      messaging_product: "whatsapp",
+      to: toPhone.replace(/[^0-9]/g, ''),
+      type: "text",
+      text: {
+        body: message
+      }
+    })
+  });
+
+  const payload = await (response.json().catch(() => null));
+
+  if (!response.ok) {
+    throw new Error(payload?.error?.message ?? "Failed to send WhatsApp message");
+  }
+
+  return payload;
+}
+
 export async function ingestWhatsappWebhook(payload: WhatsappWebhookPayload) {
   let processed = 0;
 

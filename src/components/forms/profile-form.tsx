@@ -13,6 +13,7 @@ type ProfileFormProps = {
   defaultValues: {
     name: string;
     email: string;
+    phone?: string | null;
   };
 };
 
@@ -24,6 +25,7 @@ export function ProfileForm({ defaultValues }: ProfileFormProps) {
     defaultValues: {
       name: defaultValues.name,
       email: defaultValues.email,
+      phone: defaultValues.phone ?? "",
       currentPassword: "",
       newPassword: ""
     }
@@ -58,6 +60,9 @@ export function ProfileForm({ defaultValues }: ProfileFormProps) {
         </Field>
         <Field label="Email" error={String(form.formState.errors.email?.message ?? "")}>
           <Input {...form.register("email")} />
+        </Field>
+        <Field label="WhatsApp Number" error={String(form.formState.errors.phone?.message ?? "")}>
+          <Input placeholder="+91 9876543210" {...form.register("phone")} />
         </Field>
         <Field label="Current password">
           <Input type="password" {...form.register("currentPassword")} />

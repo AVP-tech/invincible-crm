@@ -1,4 +1,4 @@
-import { ActivityType, TaskPriority, TaskRecurrencePattern, TaskStatus } from "@prisma/client";
+import { ActivityType, JobType, TaskPriority, TaskRecurrencePattern, TaskStatus } from "@prisma/client";
 import { nanoid } from "nanoid";
 import { isToday, startOfDay } from "date-fns";
 import { db } from "@/lib/db";
@@ -7,6 +7,7 @@ import { type TaskInput } from "@/lib/schemas";
 import { serializeDateInput } from "@/lib/utils";
 import { formatTaskRecurrence, getNextRecurringDueDate, isRecurringPattern } from "@/features/tasks/recurrence";
 import { runAutomationTrigger } from "@/features/automations/service";
+import { enqueueBackgroundJob } from "@/features/jobs/service";
 
 export type TaskFilter = "all" | "today" | "overdue" | "recurring" | "completed";
 
@@ -126,6 +127,16 @@ export async function createTask(workspaceId: string, userId: string, input: Tas
     taskId: task.id
   });
 
+  if (task.dueDate) {
+    await enqueueBackgroundJob(
+      workspaceId,
+      JobType.SEND_TASK_REMINDER,
+      { taskId: task.id },
+      undefined,
+      task.dueDate
+    );
+  }
+
   return task;
 }
 
@@ -222,6 +233,15 @@ export async function updateTask(workspaceId: string, userId: string, taskId: st
           dealId: spawnedTask.dealId,
           taskId: spawnedTask.id
         });
+        if (spawnedTask?.dueDate) {
+          await enqueueBackgroundJob(
+            workspaceId,
+            JobType.SEND_TASK_REMINDER,
+            { taskId: spawnedTask.id },
+            undefined,
+            spawnedTask.dueDate
+          );
+        }
       }
     }
   }

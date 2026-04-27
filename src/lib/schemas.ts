@@ -128,6 +128,7 @@ export const taskInputSchema = z.object({
 export const profileInputSchema = z.object({
   name: z.string().trim().min(2, "Name is required"),
   email: z.email(),
+  phone: optionalString,
   currentPassword: optionalString,
   newPassword: optionalString
 });

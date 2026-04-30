@@ -3,6 +3,10 @@ import { db } from "@/lib/db";
 import { logActivity } from "@/lib/activity";
 import { createPasswordHash } from "@/lib/auth";
 import { type TeamMemberInput } from "@/lib/schemas";
+import jwt from "jsonwebtoken";
+import { env } from "@/lib/env";
+import { sendEmail } from "@/lib/email";
+import { getTeamInviteEmailHtml } from "@/lib/email-templates";
 
 export async function listWorkspaceMembers(workspaceId: string) {
   return db.workspaceMembership.findMany({
@@ -22,55 +26,51 @@ export async function createWorkspaceMember(
   invitedByUserId: string,
   input: TeamMemberInput
 ) {
-  const existingUser = await db.user.findUnique({
-    where: {
-      email: input.email
-    }
+  // For the invite flow, we generate a token instead of creating the user immediately
+  const tokenPayload = {
+    email: input.email,
+    name: input.name,
+    role: input.role,
+    workspaceId,
+    invitedByUserId
+  };
+  
+  const token = jwt.sign(tokenPayload, env.sessionSecret, { expiresIn: "7d" });
+  
+  const [inviter, workspace] = await Promise.all([
+    db.user.findUnique({ where: { id: invitedByUserId } }),
+    db.workspace.findUnique({ where: { id: workspaceId } })
+  ]);
+  
+  if (!inviter || !workspace) {
+    throw new Error("Workspace or inviter not found");
+  }
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const inviteLink = `${appUrl}/invite?token=${token}`;
+  
+  const html = getTeamInviteEmailHtml({
+    inviterName: inviter.name,
+    workspaceName: workspace.name,
+    inviteLink
   });
-
-  const user =
-    existingUser ??
-    (await db.user.create({
-      data: {
-        name: input.name,
-        email: input.email,
-        passwordHash: await createPasswordHash(input.password),
-        onboardingCompleted: true
-      }
-    }));
-
-  const membership = await db.workspaceMembership.upsert({
-    where: {
-      workspaceId_userId: {
-        workspaceId,
-        userId: user.id
-      }
-    },
-    update: {
-      role: input.role,
-      invitedByUserId
-    },
-    create: {
-      workspaceId,
-      userId: user.id,
-      invitedByUserId,
-      role: input.role
-    },
-    include: {
-      user: true
-    }
+  
+  await sendEmail({
+    to: input.email,
+    subject: `You're invited to join ${workspace.name}`,
+    html
   });
 
   await logActivity({
     userId: workspaceOwnerId,
     type: ActivityType.TEAM_MEMBER_ADDED,
-    title: `Added teammate: ${membership.user.name}`,
-    description: `Role: ${membership.role}`,
-    entityType: "user",
-    entityId: membership.user.id
+    title: `Sent invite to: ${input.name}`,
+    description: `Role: ${input.role}`,
+    entityType: "workspace",
+    entityId: workspaceId
   });
 
-  return membership;
+  return { success: true };
 }
 
 export async function updateWorkspaceMemberRole(workspaceId: string, membershipId: string, role: WorkspaceRole) {

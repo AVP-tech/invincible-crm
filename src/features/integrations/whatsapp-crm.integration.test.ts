@@ -74,7 +74,7 @@ describe("saveWhatsappMessageToCrm", () => {
       phoneNumberId: "phone-number-id",
       senderPhone: "919999999999",
       messageText: "Hello from customer",
-      contactName: "Aisha Khan",
+      contactName: "Sneha Patel",
       receivedAt: new Date("2026-04-18T10:00:00.000Z")
     });
 
@@ -82,7 +82,7 @@ describe("saveWhatsappMessageToCrm", () => {
       phoneNumberId: "phone-number-id",
       senderPhone: "+91 99999 99999",
       messageText: "Need pricing details",
-      contactName: "Aisha Khan",
+      contactName: "Sneha Patel",
       receivedAt: new Date("2026-04-18T10:05:00.000Z")
     });
 
@@ -103,7 +103,7 @@ describe("saveWhatsappMessageToCrm", () => {
     expect(firstResult?.createdContact).toBe(true);
     expect(secondResult?.createdContact).toBe(false);
     expect(contacts).toHaveLength(1);
-    expect(contacts[0]?.name).toBe("Aisha Khan");
+    expect(contacts[0]?.name).toBe("Sneha Patel");
     expect(contacts[0]?.phone).toBe("919999999999");
     expect(notes).toHaveLength(2);
     expect(notes.map((note) => note.content)).toEqual(["Hello from customer", "Need pricing details"]);

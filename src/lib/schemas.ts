@@ -136,8 +136,12 @@ export const profileInputSchema = z.object({
 export const teamMemberInputSchema = z.object({
   name: z.string().trim().min(2, "Name is required"),
   email: z.email(),
-  password: z.string().min(8, "Password should be at least 8 characters"),
   role: z.nativeEnum(WorkspaceRole).default(WorkspaceRole.MEMBER)
+});
+
+export const acceptInviteSchema = z.object({
+  token: z.string().min(1, "Invalid invite link"),
+  password: z.string().min(8, "Password should be at least 8 characters")
 });
 
 export const emailIntegrationInputSchema = z.object({
@@ -361,6 +365,7 @@ export type TranscriptPreview = z.infer<typeof transcriptPreviewSchema>;
 export type CsvContactImportPreview = z.infer<typeof csvContactImportPreviewSchema>;
 export type InboxPreview = z.infer<typeof inboxPreviewSchema>;
 export type TeamMemberInput = z.infer<typeof teamMemberInputSchema>;
+export type AcceptInviteInput = z.infer<typeof acceptInviteSchema>;
 export type EmailIntegrationInput = z.infer<typeof emailIntegrationInputSchema>;
 export type WhatsappIntegrationInput = z.infer<typeof whatsappIntegrationInputSchema>;
 export type AutomationRuleInput = z.infer<typeof automationRuleInputSchema>;

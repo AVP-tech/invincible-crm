@@ -12,7 +12,6 @@ export function TeamMemberForm({ canManage }: { canManage: boolean }) {
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [role, setRole] = useState<WorkspaceRole>(WorkspaceRole.MEMBER);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -28,7 +27,6 @@ export function TeamMemberForm({ canManage }: { canManage: boolean }) {
       body: JSON.stringify({
         name,
         email,
-        password,
         role
       })
     });
@@ -40,10 +38,9 @@ export function TeamMemberForm({ canManage }: { canManage: boolean }) {
       return;
     }
 
-    toast.success("Teammate added");
+    toast.success("Invitation email sent!");
     setName("");
     setEmail("");
-    setPassword("");
     setRole(WorkspaceRole.MEMBER);
     router.refresh();
   }
@@ -52,13 +49,10 @@ export function TeamMemberForm({ canManage }: { canManage: boolean }) {
     <form className="space-y-4" onSubmit={onSubmit}>
       <div className="grid gap-4 md:grid-cols-2">
         <Field label="Name">
-          <Input value={name} onChange={(event) => setName(event.target.value)} disabled={!canManage} placeholder="Aisha Khan" />
+          <Input value={name} onChange={(event) => setName(event.target.value)} disabled={!canManage} placeholder="Priya Sharma" />
         </Field>
         <Field label="Email">
-          <Input value={email} onChange={(event) => setEmail(event.target.value)} disabled={!canManage} placeholder="aisha@example.com" />
-        </Field>
-        <Field label="Temporary password">
-          <Input value={password} onChange={(event) => setPassword(event.target.value)} disabled={!canManage} placeholder="At least 8 characters" />
+          <Input value={email} onChange={(event) => setEmail(event.target.value)} disabled={!canManage} placeholder="priya@example.com" />
         </Field>
         <Field label="Role">
           <Select value={role} onChange={(event) => setRole(event.target.value as WorkspaceRole)} disabled={!canManage}>
@@ -71,7 +65,7 @@ export function TeamMemberForm({ canManage }: { canManage: boolean }) {
         </Field>
       </div>
       <Button type="submit" disabled={!canManage || isSubmitting}>
-        {isSubmitting ? "Adding..." : "Add teammate"}
+        {isSubmitting ? "Sending invite..." : "Send invite"}
       </Button>
     </form>
   );

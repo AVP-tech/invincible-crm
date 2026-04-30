@@ -54,7 +54,7 @@ export function AppShell({ user, children }: AppShellProps) {
             </div>
           </div>
           <form action="/api/auth/logout" method="post" className="mt-4">
-            <Button variant="secondary" className="w-full justify-center">
+            <Button type="submit" variant="secondary" className="w-full justify-center">
               <LogOut className="mr-2 h-4 w-4" />
               Sign out
             </Button>

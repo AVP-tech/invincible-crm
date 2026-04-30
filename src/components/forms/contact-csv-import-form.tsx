@@ -89,7 +89,7 @@ export function ContactCsvImportForm() {
               variant="secondary"
               onClick={() =>
                 setCsvText(
-                  'Name,Email,Phone,Company,Source,Tags\nRahul Verma,rahul@northline.example.com,+91 98765 44002,Northline Fitness,Instagram,"Follow-up;Operations"\nAisha Khan,aisha@newleaf.example.com,+91 98989 12345,Newleaf Studio,Referral,"Design;Warm"'
+                  'Name,Email,Phone,Company,Source,Tags\nRahul Verma,rahul@northline.example.com,+91 98765 44002,Northline Fitness,Instagram,"Follow-up;Operations"\nSneha Patel,sneha@newleaf.example.com,+91 98989 12345,Newleaf Studio,Referral,"Design;Warm"'
                 )
               }
             >

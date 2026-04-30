@@ -66,8 +66,8 @@ export async function createWorkspaceMember(
     type: ActivityType.TEAM_MEMBER_ADDED,
     title: `Sent invite to: ${input.name}`,
     description: `Role: ${input.role}`,
-    entityType: "workspace",
-    entityId: workspaceId
+    entityType: "user",
+    entityId: workspaceOwnerId
   });
 
   return { success: true };

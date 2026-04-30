@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AlertTriangle, Clock3, RefreshCcw, Repeat2, Target } from "lucide-react";
+import { AlertTriangle, Clock3, Plus, RefreshCcw, Repeat2, Sparkles, Target } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { formatDateTime, formatDueLabel } from "@/lib/utils";
 import { getRemindersData } from "@/features/reminders/service";
@@ -19,6 +19,23 @@ export default async function RemindersPage() {
         title="Operational follow-up center"
         description="A practical view of what needs attention now: overdue tasks, upcoming commitments, stale deals, and opportunities missing a next step."
       />
+
+      <div className="flex flex-wrap gap-3">
+        <Link
+          href="/tasks/new"
+          className="inline-flex items-center gap-2 rounded-2xl border border-black/10 bg-white px-4 py-2.5 text-sm font-semibold text-ink shadow-sm transition-all hover:border-gold/30 hover:shadow-glow dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:border-gold/20"
+        >
+          <Plus className="h-4 w-4 text-gold" />
+          Add task manually
+        </Link>
+        <Link
+          href="/capture"
+          className="inline-flex items-center gap-2 rounded-2xl bg-[#132032] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#1d304b] hover:shadow-elevated dark:bg-white dark:text-[#132032] dark:hover:bg-slate-200"
+        >
+          <Sparkles className="h-4 w-4" />
+          Use AI Capture
+        </Link>
+      </div>
 
       <div className="grid gap-6 xl:grid-cols-2">
         <ReminderSection

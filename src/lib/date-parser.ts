@@ -52,6 +52,7 @@ function getTimeContext(input: string, matchIndex: number, matchLength: number) 
 }
 
 function resolveTimeHint(context: string): TimeHint | null {
+  // 12-hour format: 9:30 am, 4pm, etc.
   const explicitTimeMatch = context.match(/\b(?:at\s+)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/);
 
   if (explicitTimeMatch) {
@@ -65,6 +66,22 @@ function resolveTimeHint(context: string): TimeHint | null {
       return {
         hour,
         matchedText: explicitTimeMatch[0],
+        minute
+      };
+    }
+  }
+
+  // 24-hour format: 21:45, 14:30, at 09:00, etc.
+  const time24Match = context.match(/\b(?:at\s+)?(\d{1,2}):(\d{2})\b/);
+
+  if (time24Match) {
+    const hour = Number(time24Match[1]);
+    const minute = Number(time24Match[2]);
+
+    if (hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59) {
+      return {
+        hour,
+        matchedText: time24Match[0],
         minute
       };
     }
@@ -173,11 +190,28 @@ export function resolveRelativeDate(input: string, baseDate = new Date()): DateP
     return resolveMatchedDate(nextDay(today, day as 0 | 1 | 2 | 3 | 4 | 5 | 6), normalized, weekdayMatch.index, weekdayMatch[0]);
   }
 
+  // Indian date format: DD-MM-YY or DD/MM/YYYY (day first, then month)
   const numericDateMatch = normalized.match(/\b(?:on|by)?\s*(\d{1,2})[/-](\d{1,2})(?:[/-](\d{2,4}))?\b/);
 
   if (numericDateMatch?.index !== undefined) {
-    const day = Number(numericDateMatch[1]);
-    const month = Number(numericDateMatch[2]) - 1;
+    const first = Number(numericDateMatch[1]);
+    const second = Number(numericDateMatch[2]);
+    // Indian format: DD-MM-YY. If first number > 12, it must be a day.
+    // If second number > 12, it must be a day (American format).
+    // Default to DD-MM (Indian) when ambiguous.
+    let day: number;
+    let month: number;
+    if (first > 12 && second <= 12) {
+      day = first;
+      month = second - 1;
+    } else if (second > 12 && first <= 12) {
+      day = second;
+      month = first - 1;
+    } else {
+      // Ambiguous: default to Indian DD-MM
+      day = first;
+      month = second - 1;
+    }
     const rawYear = numericDateMatch[3] ? Number(numericDateMatch[3]) : undefined;
     const year = rawYear ? (rawYear < 100 ? 2000 + rawYear : rawYear) : undefined;
     const timeHint = resolveTimeHint(getTimeContext(normalized, numericDateMatch.index, numericDateMatch[0].length));

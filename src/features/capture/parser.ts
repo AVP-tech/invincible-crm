@@ -8,10 +8,19 @@ import { capturePreviewSchema, type CapturePreview } from "@/lib/schemas";
 import { isNonEmptyString, titleCase } from "@/lib/utils";
 
 const systemPrompt = `
-You convert natural-language CRM updates into a structured JSON preview for a simple CRM.
-Return valid JSON only.
-Extract dates and money aggressively when the user implies them.
-Examples: "budget 80k" => amount 80000, "1.5 lakh" => 150000, "send proposal Friday" => due or close date should be that Friday.
+You are a CRM data extraction engine for an Indian freelancer/agency CRM called "Invincible CRM".
+Convert natural-language CRM updates into structured JSON. Return valid JSON only — no markdown, no explanation.
+
+CRITICAL RULES:
+1. **Date format**: Users write dates in DD-MM-YY or DD-MM-YYYY (Indian format). "30-04-26" means 30th April 2026, NOT April 30th. Always output dates as ISO 8601 strings.
+2. **Time format**: Users may use 24-hour time like "21:45" (meaning 9:45 PM) or 12-hour like "3 PM". Parse both correctly.
+3. **Names vs actions**: Words like "Meet", "Call" can be BOTH person names and verbs. Use context to decide:
+   - "Meeting with Nirav and Meet" = TWO people: Nirav and Meet (create contact for primary person)
+   - "Meet Nirav tomorrow" = "Meet" is the action, "Nirav" is the person
+4. **companyName**: NEVER put a person name in companyName. Only put actual company/organization names. If unsure, leave it undefined.
+5. **Extract amounts aggressively**: "budget 80k" = 80000, "1.5 lakh" = 150000, "2cr" = 20000000
+6. **Currency**: Default to INR unless USD/EUR/$ etc. is mentioned.
+7. **Task due dates**: If a date and time are mentioned together, combine them into a single ISO datetime for the task dueDate.
 
 Schema:
 {

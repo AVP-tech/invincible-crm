@@ -507,8 +507,9 @@ export function CaptureForm({ defaultInput = "" }: CaptureFormProps) {
               <div className="rounded-3xl bg-sand/60 p-4 dark:border dark:border-slate-800 dark:bg-slate-950/60">
                 <div className="flex flex-wrap items-center gap-3">
                   {confidenceMeta ? (
-                    <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold ${confidenceMeta.tone}`}>
-                      {(preview.confidence * 100).toFixed(0)}% - {confidenceMeta.label}
+                    <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-semibold ${confidenceMeta.tone}`}>
+                      {preview.confidence >= 0.85 ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Info className="h-3.5 w-3.5" />}
+                      {confidenceMeta.label}
                     </span>
                   ) : null}
                   <div className="group relative inline-flex">

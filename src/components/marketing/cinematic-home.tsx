@@ -154,10 +154,10 @@ export function CinematicHome({ user }: { user: HomeUser }) {
           icon: UserPlus,
         },
         {
-          title: "See the pipeline",
-          description: "Walk straight into the kanban flow and activity view.",
-          href: "/login",
-          icon: KanbanSquare,
+          title: "Feature tour",
+          description: "See the full product story before entering a workspace.",
+          href: "/features",
+          icon: Sparkles,
         },
         {
           title: "Try quick capture",
@@ -196,7 +196,7 @@ export function CinematicHome({ user }: { user: HomeUser }) {
         >
           {/* ── Header ── */}
           <motion.header
-            className="flex items-center justify-between gap-4"
+            className="flex flex-wrap items-center justify-between gap-4"
             variants={itemVariants}
           >
             <div className="flex items-center gap-3">
@@ -211,13 +211,21 @@ export function CinematicHome({ user }: { user: HomeUser }) {
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center justify-end gap-2">
               {user ? (
-                <Link href={nextStepHref} className="cinematic-top-link">
-                  Enter workspace
-                </Link>
+                <>
+                  <Link href="/features" className="cinematic-top-link">
+                    Features
+                  </Link>
+                  <Link href={nextStepHref} className="cinematic-top-link">
+                    Enter workspace
+                  </Link>
+                </>
               ) : (
                 <>
+                  <Link href="/features" className="cinematic-top-link">
+                    Features
+                  </Link>
                   <Link href="/login" className="cinematic-top-link">
                     Sign in
                   </Link>
@@ -291,6 +299,12 @@ export function CinematicHome({ user }: { user: HomeUser }) {
                 <Link href={nextStepHref} className="cinematic-enter-button">
                   Enter the workspace
                   <ArrowRight className="h-4 w-4" />
+                </Link>
+                <Link
+                  href="/features"
+                  className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/[0.05] px-5 py-3 text-sm font-semibold text-white/80 transition hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
+                >
+                  See all features
                 </Link>
               </motion.div>
             </section>

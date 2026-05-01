@@ -46,6 +46,26 @@ const KNOWLEDGE_CHUNKS: ProductKnowledgeChunk[] = [
     ].join(" ")
   },
   {
+    id: "features-showcase",
+    title: "Public feature tour",
+    url: "https://invinciblecrm.com/features",
+    keywords: [
+      "features",
+      "all features",
+      "feature tour",
+      "product tour",
+      "showcase",
+      "linkedin",
+      "share",
+      "demo page"
+    ],
+    content: [
+      "Invincible CRM has a public feature tour page that shows the major product areas in one shareable view.",
+      "The feature tour covers AI Capture, Captain Hook, Dashboard, Contacts, Deals, Tasks, Reminders, Inbox, Automations, Integrations, Finance, Imports, and Search.",
+      "Useful link: https://invinciblecrm.com/features"
+    ].join(" ")
+  },
+  {
     id: "quick-capture",
     title: "AI Capture and Quick Capture workflow",
     url: "https://invinciblecrm.com/guide",

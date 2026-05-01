@@ -18,6 +18,7 @@ const navSections: NavSection[] = [
       { href: "/capture" as Route, label: "AI Capture", icon: Sparkles },
       { href: "/captain-hook" as Route, label: "Captain Hook", icon: Compass },
       { href: "/dashboard" as Route, label: "Dashboard", icon: LayoutDashboard },
+      { href: "/features" as Route, label: "Feature Tour", icon: BookOpen },
       { href: "/guide" as Route, label: "Guide", icon: BookOpen },
       { href: "/contacts" as Route, label: "Contacts", icon: Users },
       { href: "/deals" as Route, label: "Deals", icon: KanbanSquare },

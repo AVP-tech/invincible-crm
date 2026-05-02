@@ -1,11 +1,11 @@
 import { getCurrentUser } from "@/lib/auth";
-import { MotionLanding } from "@/components/marketing/motion-landing";
+import { CinematicHome } from "@/components/marketing/cinematic-home";
 
-export default async function HomePage() {
+export default async function ClassicHomePage() {
   const user = await getCurrentUser();
 
   return (
-    <MotionLanding
+    <CinematicHome
       user={
         user
           ? {

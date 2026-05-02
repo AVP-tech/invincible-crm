@@ -79,6 +79,7 @@ enum JobType {
   SYNC_SPREADSHEET
   RUN_AUTOMATION
   PROCESS_WHATSAPP
+  SEND_TASK_REMINDER
 }
 
 enum JobStatus {
@@ -134,6 +135,7 @@ model User {
   id                  String          @id @default(cuid())
   name                String
   email               String          @unique
+  phone               String?
   passwordHash        String
   onboardingCompleted Boolean         @default(false)
   createdAt           DateTime        @default(now())
@@ -490,4 +492,16 @@ model ConversationLog {
   @@index([dealId, createdAt])
   @@index([integrationConnectionId, createdAt])
   @@unique([integrationConnectionId, externalMessageId])
+}
+
+model DemoBooking {
+  id          String   @id @default(cuid())
+  name        String
+  business    String
+  phone       String
+  email       String
+  challenge   String?
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
 }

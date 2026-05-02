@@ -491,7 +491,7 @@ function CapabilitiesSection() {
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
           >
-            // What Makes Us Invincible
+            {"// What Makes Us Invincible"}
           </motion.p>
           <motion.h2
             className="font-serif italic text-white text-6xl md:text-7xl lg:text-[6rem] leading-[0.9] tracking-[-3px]"

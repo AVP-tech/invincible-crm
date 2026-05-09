@@ -23,8 +23,11 @@ const MINIMIZED_SIZE = 56;
 const DRAG_THRESHOLD = 6;
 
 function clampPosition(position: Position, width: number, height: number): Position {
-  const maxLeft = Math.max(VIEWPORT_MARGIN, window.innerWidth - width - VIEWPORT_MARGIN);
-  const maxTop = Math.max(VIEWPORT_MARGIN, window.innerHeight - height - VIEWPORT_MARGIN);
+  const vpWidth = typeof window !== "undefined" ? (window.visualViewport?.width ?? window.innerWidth) : 1024;
+  const vpHeight = typeof window !== "undefined" ? (window.visualViewport?.height ?? window.innerHeight) : 800;
+
+  const maxLeft = Math.max(VIEWPORT_MARGIN, vpWidth - width - VIEWPORT_MARGIN);
+  const maxTop = Math.max(VIEWPORT_MARGIN, vpHeight - height - VIEWPORT_MARGIN);
 
   return {
     top: Math.min(Math.max(VIEWPORT_MARGIN, position.top), maxTop),
@@ -33,13 +36,16 @@ function clampPosition(position: Position, width: number, height: number): Posit
 }
 
 function getDefaultPosition(): Position {
-  const isDesktop = window.innerWidth >= 1024;
+  if (typeof window === "undefined") return { top: 100, left: 100 };
+  const vpWidth = window.visualViewport?.width ?? window.innerWidth;
+  const vpHeight = window.visualViewport?.height ?? window.innerHeight;
+  const isDesktop = vpWidth >= 1024;
   const left = isDesktop
     ? VIEWPORT_MARGIN + 24
-    : Math.max(VIEWPORT_MARGIN, window.innerWidth - MINIMIZED_SIZE - 28);
+    : Math.max(VIEWPORT_MARGIN, vpWidth - MINIMIZED_SIZE - 28);
   const top = Math.max(
     isDesktop ? 96 : 88,
-    window.innerHeight - MINIMIZED_SIZE - (isDesktop ? 112 : 124)
+    vpHeight - MINIMIZED_SIZE - (isDesktop ? 112 : 124)
   );
 
   return { top, left };
@@ -54,6 +60,7 @@ export function CaptainBotWidget() {
   const [isLoading, setIsLoading] = useState(false);
   const [position, setPosition] = useState<Position | null>(null);
   const [showDragHint, setShowDragHint] = useState(false);
+  const [viewportSize, setViewportSize] = useState({ width: 1024, height: 800 });
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const widgetRef = useRef<HTMLDivElement>(null);
   const dragStateRef = useRef<{
@@ -141,15 +148,38 @@ export function CaptainBotWidget() {
   }, []);
 
   useEffect(() => {
-    if (!position) {
-      return;
-    }
+    if (typeof window === "undefined") return;
 
+    setViewportSize({
+      width: window.visualViewport?.width ?? window.innerWidth,
+      height: window.visualViewport?.height ?? window.innerHeight,
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!position) return;
     syncWithinViewport();
-    window.addEventListener("resize", syncWithinViewport);
+  }, [isOpen, syncWithinViewport]);
 
-    return () => window.removeEventListener("resize", syncWithinViewport);
-  }, [isOpen, position, syncWithinViewport]);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const handleResize = () => {
+      setViewportSize({
+        width: window.visualViewport?.width ?? window.innerWidth,
+        height: window.visualViewport?.height ?? window.innerHeight,
+      });
+      syncWithinViewport();
+    };
+
+    window.visualViewport?.addEventListener("resize", handleResize);
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      window.visualViewport?.removeEventListener("resize", handleResize);
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [syncWithinViewport]);
 
   const handlePointerMove = useCallback((event: PointerEvent) => {
     if (!dragStateRef.current || !widgetRef.current) {
@@ -290,7 +320,11 @@ export function CaptainBotWidget() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 14, scale: 0.98 }}
               transition={{ type: "spring", damping: 24, stiffness: 280 }}
-              className="flex h-[min(36rem,calc(100dvh-2rem))] w-[min(24rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-[1.75rem] border border-gold/20 bg-[#132032]/95 shadow-[0_24px_60px_rgba(2,8,23,0.45)] backdrop-blur-xl"
+              style={{
+                maxHeight: Math.max(200, viewportSize.height - VIEWPORT_MARGIN * 2),
+                maxWidth: Math.max(200, viewportSize.width - VIEWPORT_MARGIN * 2),
+              }}
+              className="flex h-[36rem] w-[24rem] flex-col overflow-hidden rounded-[1.75rem] border border-gold/20 bg-[#132032]/95 shadow-[0_24px_60px_rgba(2,8,23,0.45)] backdrop-blur-xl"
             >
               <div className="flex items-center justify-between border-b border-white/10 bg-black/40 px-4 py-3">
                 <div className="flex min-w-0 items-center gap-3">
@@ -332,7 +366,7 @@ export function CaptainBotWidget() {
                 </div>
               </div>
 
-              <div className="flex-1 space-y-4 overflow-y-auto p-4">
+              <div className="flex-1 min-h-0 space-y-4 overflow-y-auto p-4">
                 {messages.map((msg, idx) => (
                   <motion.div
                     key={idx}
@@ -342,7 +376,7 @@ export function CaptainBotWidget() {
                   >
                     <div
                       className={
-                        "max-w-[85%] rounded-2xl px-4 py-2 text-sm " +
+                        "max-w-[85%] break-words rounded-2xl px-4 py-2 text-sm " +
                         (msg.role === "user"
                           ? "rounded-tr-none bg-gold text-black"
                           : "rounded-tl-none border border-white/5 bg-white/10 text-slate-200")

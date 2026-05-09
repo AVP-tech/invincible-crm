@@ -11,22 +11,22 @@ import {
   SeoLandingPage,
 } from "@/components/marketing/seo-landing-page";
 
-const title = "CRM for Indian sales teams handling chats, calls, and fast follow-up";
+const title = "CRM for global sales teams handling chats, calls, and fast follow-up";
 const description =
-  "Invincible CRM helps Indian sales teams manage leads, follow-ups, reminders, and deal movement across fast, chat-heavy workflows.";
-const canonicalPath = "/crm-for-indian-sales-teams";
+  "Invincible CRM helps global sales teams manage leads, follow-ups, reminders, and deal movement across fast, chat-heavy workflows.";
+const canonicalPath = "/crm-for-global-sales-teams";
 const keywords = [
-  "crm for indian sales teams",
-  "sales crm india",
-  "indian crm software",
-  "crm for fast-moving sales teams in india",
+  "crm for global sales teams",
+  "sales crm global",
+  "global crm software",
+  "crm for fast-moving sales teams globally",
 ];
 
 const faqs: SeoFaq[] = [
   {
-    question: "Why does Invincible CRM fit Indian sales teams particularly well?",
+    question: "Why does Invincible CRM fit global sales teams particularly well?",
     answer:
-      "Because many Indian sales teams work across calls, WhatsApp, quick follow-ups, and founder-led selling. Invincible CRM is positioned around that fast operational reality instead of heavyweight enterprise process.",
+      "Because many global sales teams work across calls, WhatsApp, quick follow-ups, and founder-led selling. Invincible CRM is positioned around that fast operational reality instead of heavyweight enterprise process.",
   },
   {
     question: "Can this help teams that sell through chats and phone calls instead of long email chains?",
@@ -65,10 +65,10 @@ export const metadata: Metadata = {
   },
 };
 
-export default function CrmForIndianSalesTeamsPage() {
+export default function CrmForGlobalSalesTeamsPage() {
   const structuredData = buildLandingStructuredData({
-    slug: "crm-for-indian-sales-teams",
-    pageTitle: "CRM for Indian Sales Teams",
+    slug: "crm-for-global-sales-teams",
+    pageTitle: "CRM for Global Sales Teams",
     description,
     faqs,
     featureTitles: [
@@ -87,9 +87,9 @@ export default function CrmForIndianSalesTeamsPage() {
       />
 
       <SeoLandingPage
-        eyebrow="CRM for Indian sales teams"
-        title="A CRM for Indian sales teams that move fast across calls, chats, and follow-up"
-        description="Many Indian sales teams do not sell through neat, slow, enterprise workflows. They sell through quick calls, WhatsApp messages, repeated callbacks, and constant context switching. Invincible CRM is built for that pace."
+        eyebrow="CRM for global sales teams"
+        title="A CRM for global sales teams that move fast across calls, chats, and follow-up"
+        description="Many global sales teams do not sell through neat, slow, enterprise workflows. They sell through quick calls, WhatsApp messages, repeated callbacks, and constant context switching. Invincible CRM is built for that pace."
         primaryCta={{ href: "/book-demo", label: "See it in a live walkthrough" }}
         secondaryCta={{ href: "/register", label: "Start free" }}
         heroHighlights={[
@@ -121,7 +121,7 @@ export default function CrmForIndianSalesTeamsPage() {
           },
         ]}
         solutionTitle="A cleaner operating system for conversational selling"
-        solutionDescription="Invincible CRM gives Indian sales teams a simpler way to run follow-up. It is designed for the reality that much of the sales cycle happens in calls, chats, and quick updates that need to become structured records fast."
+        solutionDescription="Invincible CRM gives global sales teams a simpler way to run follow-up. It is designed for the reality that much of the sales cycle happens in calls, chats, and quick updates that need to become structured records fast."
         solutionBullets={[
           "Capture lead context while it is still fresh instead of waiting for end-of-day cleanup.",
           "Create reminders and task ownership for callbacks, demos, and proposal follow-ups.",

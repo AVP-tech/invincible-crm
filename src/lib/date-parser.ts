@@ -190,15 +190,15 @@ export function resolveRelativeDate(input: string, baseDate = new Date()): DateP
     return resolveMatchedDate(nextDay(today, day as 0 | 1 | 2 | 3 | 4 | 5 | 6), normalized, weekdayMatch.index, weekdayMatch[0]);
   }
 
-  // Indian date format: DD-MM-YY or DD/MM/YYYY (day first, then month)
+  // Global date format: DD-MM-YY or DD/MM/YYYY (day first, then month)
   const numericDateMatch = normalized.match(/\b(?:on|by)?\s*(\d{1,2})[/-](\d{1,2})(?:[/-](\d{2,4}))?\b/);
 
   if (numericDateMatch?.index !== undefined) {
     const first = Number(numericDateMatch[1]);
     const second = Number(numericDateMatch[2]);
-    // Indian format: DD-MM-YY. If first number > 12, it must be a day.
+    // Global format: DD-MM-YY. If first number > 12, it must be a day.
     // If second number > 12, it must be a day (American format).
-    // Default to DD-MM (Indian) when ambiguous.
+    // Default to DD-MM (Global) when ambiguous.
     let day: number;
     let month: number;
     if (first > 12 && second <= 12) {
@@ -208,7 +208,7 @@ export function resolveRelativeDate(input: string, baseDate = new Date()): DateP
       day = second;
       month = first - 1;
     } else {
-      // Ambiguous: default to Indian DD-MM
+      // Ambiguous: default to Global DD-MM
       day = first;
       month = second - 1;
     }

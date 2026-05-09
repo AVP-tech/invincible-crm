@@ -183,8 +183,8 @@ export default function CrmForSmallBusinessPage() {
             description: "See the use-case page for small teams that close business through chat-heavy selling.",
           },
           {
-            href: "/crm-for-indian-sales-teams",
-            label: "CRM for Indian sales teams",
+            href: "/crm-for-global-sales-teams",
+            label: "CRM for global sales teams",
             description: "Read the regional positioning page built for fast-moving teams managing calls, chats, and follow-up.",
           },
           {

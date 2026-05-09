@@ -183,8 +183,8 @@ export default function WhatsAppCrmPage() {
             description: "See how the same product fits lean teams that need a simple CRM without admin bloat.",
           },
           {
-            href: "/crm-for-indian-sales-teams",
-            label: "CRM for Indian sales teams",
+            href: "/crm-for-global-sales-teams",
+            label: "CRM for global sales teams",
             description: "Explore the workflow angle for fast-moving teams selling through calls, chats, and follow-up heavy cycles.",
           },
           {

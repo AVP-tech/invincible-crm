@@ -35,7 +35,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.85
     },
     {
-      url: `${siteUrl}/crm-for-indian-sales-teams`,
+      url: `${siteUrl}/crm-for-global-sales-teams`,
       lastModified: new Date(),
       changeFrequency: "monthly",
       priority: 0.85

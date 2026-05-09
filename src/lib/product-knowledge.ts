@@ -132,12 +132,12 @@ const KNOWLEDGE_CHUNKS: ProductKnowledgeChunk[] = [
     ].join(" ")
   },
   {
-    id: "indian-sales-teams",
-    title: "Fit for Indian sales teams",
-    url: "https://invinciblecrm.com/crm-for-indian-sales-teams",
+    id: "global-sales-teams",
+    title: "Fit for global sales teams",
+    url: "https://invinciblecrm.com/crm-for-global-sales-teams",
     keywords: [
-      "india",
-      "indian sales team",
+      "global",
+      "global sales team",
       "sales team",
       "calls",
       "callbacks",
@@ -146,10 +146,10 @@ const KNOWLEDGE_CHUNKS: ProductKnowledgeChunk[] = [
       "fast follow up"
     ],
     content: [
-      "Invincible CRM is a strong fit for Indian sales teams that work across calls, WhatsApp, quick follow-ups, and founder-led selling.",
+      "Invincible CRM is a strong fit for global sales teams that work across calls, WhatsApp, quick follow-ups, and founder-led selling.",
       "It is designed for fast operational reality instead of heavyweight enterprise process.",
       "The product helps reduce missed callbacks and stale follow-up by converting updates into tasks, reminders, and visible deal movement.",
-      "Useful link: https://invinciblecrm.com/crm-for-indian-sales-teams"
+      "Useful link: https://invinciblecrm.com/crm-for-global-sales-teams"
     ].join(" ")
   },
   {

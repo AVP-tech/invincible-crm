@@ -19,7 +19,7 @@ export default function CapturePage() {
         title="Your CRM updates itself — just talk."
         description="Describe what happened in plain language. Invincible CRM extracts contacts, deals, tasks, and notes — ready for your review before anything is saved."
       />
-      <p className="text-sm font-medium text-moss">Built for Indian freelancers and small agencies</p>
+      <p className="text-sm font-medium text-moss">Built for global freelancers and small agencies</p>
       <CaptureForm />
     </div>
   );

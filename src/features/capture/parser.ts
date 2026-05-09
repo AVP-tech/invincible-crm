@@ -8,11 +8,11 @@ import { capturePreviewSchema, type CapturePreview } from "@/lib/schemas";
 import { isNonEmptyString, titleCase } from "@/lib/utils";
 
 const systemPrompt = `
-You are a CRM data extraction engine for an Indian freelancer/agency CRM called "Invincible CRM".
+You are a CRM data extraction engine for a global freelancer/agency CRM called "Invincible CRM".
 Convert natural-language CRM updates into structured JSON. Return valid JSON only — no markdown, no explanation.
 
 CRITICAL RULES:
-1. **Date format**: Users write dates in DD-MM-YY or DD-MM-YYYY (Indian format). "30-04-26" means 30th April 2026, NOT April 30th. Always output dates as ISO 8601 strings.
+1. **Date format**: Users write dates in DD-MM-YY or DD-MM-YYYY format. "30-04-26" means 30th April 2026, NOT April 30th. Always output dates as ISO 8601 strings.
 2. **Time format**: Users may use 24-hour time like "21:45" (meaning 9:45 PM) or 12-hour like "3 PM". Parse both correctly.
 3. **Names vs actions**: Words like "Meet", "Call" can be BOTH person names and verbs. Use context to decide:
    - "Meeting with Nirav and Meet" = TWO people: Nirav and Meet (create contact for primary person)

@@ -1,6 +1,6 @@
-# Invisible CRM
+# Invincible CRM:-The CRM that never drops the  ball
 
-Invisible CRM is an AI-first CRM MVP for very small businesses that want deal tracking, follow-ups, and notes without enterprise-style setup or admin drag.
+Invincible CRM is an AI-first CRM MVP for very small businesses that want deal tracking, follow-ups, and notes without enterprise-style setup or admin drag.
 
 The product is built around one core idea:
 
